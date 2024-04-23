@@ -1,6 +1,8 @@
 */target/
 /target
 pkg/*.wasm
+!pkg/tg.wasm
+!pkg/openai.wasm
 *.swp
 *.swo
 */wasi_snapshot_preview1.wasm
