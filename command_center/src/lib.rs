@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::collections::HashMap;
 use std::str::FromStr;
+use reqwest;
 use frankenstein::{
     ChatId, SendMessageParams, TelegramApi, UpdateContent::ChannelPost as TgChannelPost,
     UpdateContent::Message as TgMessage,
@@ -120,6 +122,7 @@ fn handle_telegram_message(our: &Address, message: &Message, state: &mut Option<
         _ => return Err(anyhow::anyhow!("unexpected content: {:?}", update.content)),
     };
     let text = msg.text.clone().unwrap_or_default();
+    println!("Got message: {:?}", text);
     if let Some(voice) = msg.voice.clone() {
         let get_file_params = frankenstein::GetFileParams::builder()
                     .file_id(voice.file_id)
@@ -127,16 +130,39 @@ fn handle_telegram_message(our: &Address, message: &Message, state: &mut Option<
         let file_response = tg_api.get_file(&get_file_params)?;
         if let Some(file_path) = file_response.result.file_path {
             let download_url = format!("https://api.telegram.org/file/bot{}/{}", config.telegram_key, file_path);
-            println!("Downloading voice from {:?}", download_url);
-            // TODO: Zena: download with reqwest
-            /*
-            let response = reqwest::blocking::get(download_url)?;
-            if response.status().is_success() {
-                let bytes = response.bytes()?;
-                // Now you have the voice message's contents in `bytes`
-                // You can save it to a file or process it as needed
+            println!("Download url: {:?}", download_url);
+            let outgoing_request = http::OutgoingHttpRequest {
+                method: "GET".to_string(),
+                version: None,
+                url: download_url,
+                headers: HashMap::new(),
+            };
+            let body_bytes = json!(http::HttpClientAction::Http(outgoing_request))
+                .to_string()
+                .as_bytes()
+                .to_vec();
+            let Ok(Ok(result)) = Request::new()
+                .target(Address::new(
+                    "our",
+                    ProcessId::new(Some("http_client"), "distro", "sys"),
+                ))
+                .body(body_bytes)
+                .send_and_await_response(30) else {
+                    return Err(anyhow::anyhow!("Failed to send request"));
+                };
+            let Message::Response { source, body, metadata, context, capabilities } = result else {
+                return Err(anyhow::anyhow!("Failed to get response"));
+            };
+            let Some(blob) = get_blob() else {
+                return Err(anyhow::anyhow!("Failed to get voice bytes"));
+            };
+            println!("Length of voice bytes is {:?}", blob.bytes.len());
+            println!("Length of body itself is {:?}", body.len());
+            match std::str::from_utf8(&body) {
+                Ok(decoded_body) => println!("Decoded body: {:?}", decoded_body),
+                Err(e) => println!("Failed to decode body: {:?}", e),
             }
-             */
+
         }
     }
     Ok(())
