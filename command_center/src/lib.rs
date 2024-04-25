@@ -1,12 +1,12 @@
-use serde::{Deserialize, Serialize};
-use serde_json::json;
-use std::collections::HashMap;
-use std::str::FromStr;
-use reqwest;
 use frankenstein::{
     ChatId, SendMessageParams, TelegramApi, UpdateContent::ChannelPost as TgChannelPost,
     UpdateContent::Message as TgMessage,
 };
+use reqwest;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::collections::HashMap;
+use std::str::FromStr;
 
 use kinode_process_lib::{
     await_message, call_init, get_blob, http, println, Address, Message, ProcessId, Request,
@@ -28,7 +28,16 @@ wit_bindgen::generate!({
 fn handle_http_message(our: &Address, message: &Message, state: &mut Option<State>) {
     match message {
         Message::Response { .. } => {
-            return;
+            let Some(context) = message.context() else {
+                return;
+            };
+            match context[0] {
+                0 => {
+                    let result = openai_whisper_response()?;
+                    println!("Result is {:?}", result);
+                }
+                _ => return,
+            }
         }
         Message::Request { ref body, .. } => {
             let Ok(server_request) = http::HttpServerRequest::from_bytes(body) else {
@@ -42,7 +51,7 @@ fn handle_http_message(our: &Address, message: &Message, state: &mut Option<Stat
             let Some(body) = get_blob() else {
                 return;
             };
-            
+
             let Ok(path) = http_request.path() else {
                 return;
             };
@@ -86,8 +95,17 @@ fn config(our: &Address, body_bytes: &[u8], state: &mut Option<State>) {
     }
 }
 
-fn handle_telegram_message(our: &Address, message: &Message, state: &mut Option<State>) -> anyhow::Result<()> {
-    let Message::Request { ref source, ref body, ..} = message else {
+fn handle_telegram_message(
+    our: &Address,
+    message: &Message,
+    state: &mut Option<State>,
+) -> anyhow::Result<()> {
+    let Message::Request {
+        ref source,
+        ref body,
+        ..
+    } = message
+    else {
         return Err(anyhow::anyhow!("unexpected message: {:?}", message));
     };
 
@@ -128,11 +146,14 @@ fn handle_telegram_message(our: &Address, message: &Message, state: &mut Option<
     println!("Got message: {:?}", text);
     if let Some(voice) = msg.voice.clone() {
         let get_file_params = frankenstein::GetFileParams::builder()
-                    .file_id(voice.file_id)
-                    .build();
+            .file_id(voice.file_id)
+            .build();
         let file_response = tg_api.get_file(&get_file_params)?;
         if let Some(file_path) = file_response.result.file_path {
-            let download_url = format!("https://api.telegram.org/file/bot{}/{}", config.telegram_key, file_path);
+            let download_url = format!(
+                "https://api.telegram.org/file/bot{}/{}",
+                config.telegram_key, file_path
+            );
             println!("Download url: {:?}", download_url);
             let outgoing_request = http::OutgoingHttpRequest {
                 method: "GET".to_string(),
@@ -150,10 +171,18 @@ fn handle_telegram_message(our: &Address, message: &Message, state: &mut Option<
                     ProcessId::new(Some("http_client"), "distro", "sys"),
                 ))
                 .body(body_bytes)
-                .send_and_await_response(30) else {
-                    return Err(anyhow::anyhow!("Failed to send request"));
-                };
-            let Message::Response { source, body, metadata, context, capabilities } = result else {
+                .send_and_await_response(30)
+            else {
+                return Err(anyhow::anyhow!("Failed to send request"));
+            };
+            let Message::Response {
+                source,
+                body,
+                metadata,
+                context,
+                capabilities,
+            } = result
+            else {
                 return Err(anyhow::anyhow!("Failed to get response"));
             };
             let Some(blob) = get_blob() else {
@@ -166,9 +195,9 @@ fn handle_telegram_message(our: &Address, message: &Message, state: &mut Option<
                 Err(e) => println!("Failed to decode body: {:?}", e),
             }
             if let Some(openai_key) = state.config.openai_key {
-                let openai_whisper_request = openai_whisper_request(&blob.bytes, &openai_key, 0); // TODO: Zena: make the 0 a const for context management
+                let openai_whisper_request = openai_whisper_request(&blob.bytes, &openai_key, 0);
+                // TODO: Zena: make the 0 a const for context management
             }
-
         }
     }
     Ok(())

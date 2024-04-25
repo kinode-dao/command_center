@@ -721,9 +721,9 @@ dependencies = [
 
 [[package]]
 name = "frankenstein"
-version = "0.30.6"
+version = "0.30.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d16cabd3940cda6c9c4516f9b609ed812ca4671feb6452ad66da71be326d24f"
+checksum = "4c322c50435224e235751dda28868ba6b69a30d480df8b4c24746f20498982f1"
 dependencies = [
  "serde",
  "thiserror",
@@ -1327,7 +1327,7 @@ checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 [[package]]
 name = "openai_whisper"
 version = "0.1.0"
-source = "git+https://github.com/kinode-dao/openai_whisper#6f07eb718788461931d5ff17ffc19c69370f5458"
+source = "git+https://github.com/kinode-dao/openai_whisper#df3f35bc4561a8252c726099dfb0909a1e614102"
 dependencies = [
  "anyhow",
  "bincode",
@@ -2841,9 +2841,9 @@ dependencies = [
 
 [[package]]
 name = "zeroize"
-version = "1.7.0"
+version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "525b4ec142c6b68a2d10f01f7bbf6755599ca3f81ea53b8431b7dd348f5fdb2d"
+checksum = "63381fa6624bf92130a6b87c0d07380116f80b565c42cf0d754136f0238359ef"
 dependencies = [
  "zeroize_derive",
 ]
