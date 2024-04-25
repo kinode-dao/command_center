@@ -26,20 +26,24 @@ fn handle_http_message(our: &Address, message: &Message, state: &mut Option<Stat
 }
 
 fn handle_http_response(message: &Message, state: &mut Option<State>) -> Option<()> {
+    println!("Received a response");
     let context = message.context()?;
     let state = state.as_ref()?;
 
     match context[0] {
         0 => {
             // Result of voice message transcription
-            let _text = openai_whisper_response().ok()?;
+            println!("Handling voice response");
+            let text = openai_whisper_response().ok()?;
+            println!("Got text: {:?}", text);
             // TODO: Do something with the text;
         }
         1 => {
+            println!("Sending a whisper request");
             let bytes = get_blob()?.bytes;
             if let Some(openai_key) = &state.config.openai_key {
-                println!("Sent request");
                 openai_whisper_request(&bytes, &openai_key, 0);
+                println!("Sent request");
                 // TODO: Zena: make the 0 a const for context management
             }
         }
@@ -117,6 +121,7 @@ fn handle_tg_voice_message(state: &State, voice: Box<Voice>) -> Option<()> {
         "https://api.telegram.org/file/bot{}/{}",
         state.config.telegram_key, file_path
     );
+    println!("Download URL: {:?}", download_url);
     let outgoing_request = http::OutgoingHttpRequest {
         method: "GET".to_string(),
         version: None,
@@ -127,6 +132,7 @@ fn handle_tg_voice_message(state: &State, voice: Box<Voice>) -> Option<()> {
         .to_string()
         .as_bytes()
         .to_vec();
+    println!("Sending the voice get request");
     Request::new()
         .target(Address::new(
             "our",
@@ -134,6 +140,7 @@ fn handle_tg_voice_message(state: &State, voice: Box<Voice>) -> Option<()> {
         ))
         .body(body_bytes)
         .context(vec![1])
+        .expects_response(30)
         .send()
         .ok()
 }
@@ -148,6 +155,7 @@ fn handle_telegram_message(message: &Message, state: &mut Option<State>) -> Opti
     println!("Got message: {:?}", text);
 
     if let Some(voice) = msg.voice.clone() {
+        println!("Got voice message");
         handle_tg_voice_message(state, voice);
     }
     Some(())
