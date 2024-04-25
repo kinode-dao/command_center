@@ -1327,14 +1327,16 @@ checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 [[package]]
 name = "openai_whisper"
 version = "0.1.0"
-source = "git+https://github.com/kinode-dao/openai_whisper#df3f35bc4561a8252c726099dfb0909a1e614102"
+source = "git+https://github.com/kinode-dao/openai_whisper#81346400749c183e44ec2f3a35790c9fdd67eaf6"
 dependencies = [
  "anyhow",
  "bincode",
  "kinode_process_lib 0.6.0 (git+https://github.com/kinode-dao/process_lib?tag=v0.6.0)",
+ "mime 0.3.17",
  "multipart",
  "serde",
  "serde_json",
+ "url 2.5.0",
 ]
 
 [[package]]

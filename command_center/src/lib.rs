@@ -2,7 +2,6 @@ use frankenstein::{
     ChatId, SendMessageParams, TelegramApi, UpdateContent::ChannelPost as TgChannelPost,
     UpdateContent::Message as TgMessage,
 };
-use reqwest;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
@@ -28,13 +27,23 @@ wit_bindgen::generate!({
 fn handle_http_message(our: &Address, message: &Message, state: &mut Option<State>) {
     match message {
         Message::Response { .. } => {
+            println!("Response received");
+            let body = message.body();
+            match std::str::from_utf8(body) {
+                Ok(decoded_body) => println!("Decoded body: {:?}", decoded_body),
+                Err(e) => println!("Failed to decode body: {:?}", e),
+            }
             let Some(context) = message.context() else {
                 return;
             };
+            println!("Context is {:?}", context);
             match context[0] {
                 0 => {
-                    let result = openai_whisper_response()?;
-                    println!("Result is {:?}", result);
+                    println!("Pre");
+                    match openai_whisper_response() {
+                        Ok(result) => println!("Result is {:?}", result),
+                        Err(e) => println!("Error: {:?}", e),
+                    }
                 }
                 _ => return,
             }
@@ -194,8 +203,9 @@ fn handle_telegram_message(
                 Ok(decoded_body) => println!("Decoded body: {:?}", decoded_body),
                 Err(e) => println!("Failed to decode body: {:?}", e),
             }
-            if let Some(openai_key) = state.config.openai_key {
-                let openai_whisper_request = openai_whisper_request(&blob.bytes, &openai_key, 0);
+            if let Some(openai_key) = &state.config.openai_key {
+                println!("Sent request");
+                openai_whisper_request(&blob.bytes, &openai_key, 0);
                 // TODO: Zena: make the 0 a const for context management
             }
         }
@@ -215,9 +225,12 @@ fn init(our: Address) {
         if message.source().node != our.node {
             continue;
         }
-        if message.source().process == "http_server:distro:sys" {
+        if message.source().process == "http_server:distro:sys"
+            || message.source().process == "http_client:distro:sys"
+        {
             let http_request_outcome = handle_http_message(&our, &message, &mut state);
         } else {
+            println!("message source process is {:?}", message.source());
             match handle_telegram_message(&our, &message, &mut state) {
                 Ok(_) => {}
                 Err(e) => {
