@@ -13,7 +13,7 @@
                 telegram_key: telegramKey,
                 openai_key: openaiKey
             };
-            const response = await fetch('http://localhost:8080/command_center:command_center:template.os/config', {
+            const response = await fetch('http://localhost:8080/command_center:command_center:template.os/submit_config', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
