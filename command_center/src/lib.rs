@@ -12,6 +12,7 @@ use kinode_process_lib::{
     await_message, call_init, get_blob, http, println, Address, Message, ProcessId, Request,
     Response,
 };
+use openai_whisper::{openai_whisper_request, openai_whisper_response};
 
 mod structs;
 use structs::*;
@@ -45,7 +46,7 @@ fn handle_http_message(our: &Address, message: &Message, state: &mut Option<Stat
             let Ok(path) = http_request.path() else {
                 return;
             };
-            
+
             match path.as_str() {
                 "/config" => {
                     config(our, &body.bytes, state);
@@ -163,6 +164,9 @@ fn handle_telegram_message(our: &Address, message: &Message, state: &mut Option<
             match std::str::from_utf8(&body) {
                 Ok(decoded_body) => println!("Decoded body: {:?}", decoded_body),
                 Err(e) => println!("Failed to decode body: {:?}", e),
+            }
+            if let Some(openai_key) = state.config.openai_key {
+                let openai_whisper_request = openai_whisper_request(&blob.bytes, &openai_key, 0); // TODO: Zena: make the 0 a const for context management
             }
 
         }
