@@ -41,9 +41,11 @@ fn handle_http_message(our: &Address, message: &Message, state: &mut Option<Stat
             let Some(body) = get_blob() else {
                 return;
             };
+            
             let Ok(path) = http_request.path() else {
                 return;
             };
+            
             match path.as_str() {
                 "/config" => {
                     config(our, &body.bytes, state);

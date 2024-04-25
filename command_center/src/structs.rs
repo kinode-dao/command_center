@@ -70,4 +70,6 @@ fn hydrate_state(our: &Address, config: InitialConfig) -> anyhow::Result<State> 
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct InitialConfig {
     pub telegram_key: String,
+    pub openai_key: Option<String>,
 }
+

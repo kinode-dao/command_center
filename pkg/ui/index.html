@@ -7,13 +7,18 @@
     <link rel="stylesheet" href="index.css">
     <script>
         async function submitKey() {
-            const key = document.getElementById('telegramKey').value;
+            const telegramKey = document.getElementById('telegramKey').value;
+            const openaiKey = document.getElementById('openaiKey').value || null;
+            const bodyData = {
+                telegram_key: telegramKey,
+                openai_key: openaiKey
+            };
             const response = await fetch('http://localhost:8080/command_center:command_center:template.os/config', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({telegram_key: key}),
+                body: JSON.stringify(bodyData),
             });
             const data = await response.json();
             if (data.message === 'success') {
@@ -32,6 +37,16 @@
     <p>Securely copy the API key displayed.</p>
     <p>Paste the bot API key into the input below.</p>
     <input type="text" id="telegramKey" placeholder="Enter Telegram Bot API Key">
+    <p>For OpenAI Whisper and LLM functionality, an OpenAI API key is optional:</p>
+    <ol>
+        <li>Visit OpenAI's signup page.</li>
+        <li>Create an account and navigate to the API section.</li>
+        <li>Click "New API Key" to generate a key.</li>
+        <li>Securely copy the API key displayed.</li>
+        <li>Type 'y' to proceed with entering the API key.</li>
+        <li>Paste the API key into the input below.</li>
+    </ol>
+    <input type="text" id="openaiKey" placeholder="Enter OpenAI API Key (Optional)">
     <button onclick="submitKey()">Submit</button>
     <p id="result"></p>
 </body>
