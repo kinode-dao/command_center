@@ -30,7 +30,7 @@
     
         async function fetchStatus() {
             const response = await fetch('http://localhost:8080/command_center:command_center:template.os/status', {
-                method: 'GET',
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 }
@@ -44,7 +44,7 @@
             }
         }
     
-        window.onload = fetchStatus;
+        document.addEventListener('DOMContentLoaded', fetchStatus);
     </script>
 </head>
 <body>

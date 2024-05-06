@@ -198,7 +198,7 @@ fn handle_message(our: &Address, state: &mut Option<State>) -> anyhow::Result<()
 
 call_init!(init);
 fn init(our: Address) {
-    let _ = http::serve_ui(&our, "ui/", true, false, vec!["/", "/submit_config"]);
+    let _ = http::serve_ui(&our, "ui/", true, false, vec!["/", "/submit_config", "/status"]);
     let mut state = State::fetch();
 
     let Ok(_pkgs) = spawners::spawn_pkgs(&our) else {
