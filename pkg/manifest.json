@@ -2,7 +2,7 @@
     {
         "process_name": "command_center",
         "process_wasm_path": "/command_center.wasm",
-        "on_exit": "Restart",
+        "on_exit": "None",
         "request_networking": true,
         "request_capabilities": [
             "http_server:distro:sys",

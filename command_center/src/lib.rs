@@ -1,181 +1,82 @@
-use frankenstein::{Message as TgMessage, TelegramApi, UpdateContent, Voice};
-use serde_json::json;
-use std::collections::HashMap;
+// use frankenstein::{Message as TgMessage, TelegramApi, UpdateContent, Voice};
 
 use kinode_process_lib::{
-    await_message, call_init, get_blob, http, println, Address, Message, ProcessId, Request,
+    call_init, println, Address, Request,
 };
-use openai_whisper::{openai_whisper_request, openai_whisper_response};
+// use openai_whisper::{openai_whisper_request, openai_whisper_response};
 
-mod structs;
-use structs::*;
+// mod structs;
+// use structs::*;
 
-mod tg_api;
-use crate::tg_api::TgResponse;
+// mod tg_api;
+// use crate::tg_api::TgResponse;
+
+mod spawners;
+use spawners::*;
+
+use llm_interface::openai::*;
 
 wit_bindgen::generate!({
     path: "wit",
     world: "process",
 });
 
-fn handle_http_message(our: &Address, message: &Message, state: &mut Option<State>) {
-    match message {
-        Message::Response { .. } => handle_http_response(message, state),
-        Message::Request { ref body, .. } => handle_http_request(our, state, body),
+fn register_openai_api_key(openai_address: &Address) -> anyhow::Result<()> {
+    let openai_api_key_request = RegisterApiKeyRequest {
+        api_key: "sk-proj-HQVWEpmlLcvdOzewWENwT3BlbkFJ5w8vgnW7feohw0TVdaOH".to_string(),
     };
+    let request = serde_json::to_vec(&LLMRequest::RegisterOpenaiApiKey(openai_api_key_request))?;
+    let response = Request::new()
+        .target(openai_address)
+        .body(request)
+        .send_and_await_response(30)??;
+
+    println!("Openai register response {:?}", response);
+
+    Ok(())
 }
 
-fn handle_http_response(message: &Message, state: &mut Option<State>) -> Option<()> {
-    let context = message.context()?;
-    let state = state.as_ref()?;
-
-    match context[0] {
-        0 => {
-            // Result of voice message transcription
-            let text = openai_whisper_response().ok()?;
-            println!("Got text: {:?}", text);
-            // TODO: Do something with the text;
-        }
-        1 => {
-            let bytes = get_blob()?.bytes;
-            if let Some(openai_key) = &state.config.openai_key {
-                openai_whisper_request(&bytes, &openai_key, 0);
-                // TODO: Zena: make the 0 a const for context management
-            }
-        }
-        _ => {}
-    }
-    Some(())
-}
-
-fn handle_http_request(our: &Address, state: &mut Option<State>, body: &[u8]) -> Option<()> {
-    let http_request = http::HttpServerRequest::from_bytes(body).ok()?.request();
-    let path = http_request?.path().ok()?;
-    let bytes = get_blob()?.bytes;
-
-    match path.as_str() {
-        "/submit_config" => {
-            submit_config(our, &bytes, state);
-        }
-        _ => {}
-    }
-    Some(())
-}
-
-fn submit_config(our: &Address, body_bytes: &[u8], state: &mut Option<State>) -> Option<()> {
-    let initial_config = serde_json::from_slice::<InitialConfig>(body_bytes).ok()?;
-    match state {
-        Some(state_) => {
-            println!("Modifying state to {:?}", initial_config);
-            state_.config = initial_config;
-        }
-        None => {
-            println!("Creating state {:?}", initial_config);
-            *state = Some(State::new(our, initial_config));
-        }
-    }
-
-    if let Some(ref mut state) = state {
-        state.save();
-
-        http::send_response(
-            http::StatusCode::OK,
-            Some(HashMap::from([(
-                "Content-Type".to_string(),
-                "application/json".to_string(),
-            )])),
-            b"{\"message\": \"success\"}".to_vec(),
-        );
-    }
-
-    Some(())
-}
-
-fn get_last_tg_msg(message: &Message) -> Option<TgMessage> {
-    let Ok(TgResponse::Update(tg_update)) = serde_json::from_slice(message.body()) else {
-        return None;
+fn openai_embedding_request(openai_address: &Address) -> anyhow::Result<()> {
+    let request = EmbeddingRequest {
+        model: "text-embedding-3-small".to_string(),
+        input: "The food was delicious and the waitress was very friendly".to_string(),
     };
-    let update = tg_update.updates.last()?;
-    let msg = match &update.content {
-        UpdateContent::Message(msg) | UpdateContent::ChannelPost(msg) => msg,
-        _ => return None,
-    };
-    Some(msg.clone())
-}
+    let request = serde_json::to_vec(&LLMRequest::Embedding(request))?;
+    let response = Request::new()
+        .target(openai_address)
+        .body(request)
+        .send_and_await_response(30)?;
 
-fn handle_tg_voice_message(state: &State, voice: Box<Voice>) -> Option<()> {
-    let get_file_params = frankenstein::GetFileParams::builder()
-        .file_id(voice.file_id)
-        .build();
-    let file_path = state
-        .tg_api
-        .get_file(&get_file_params)
-        .ok()?
-        .result
-        .file_path?;
-    let download_url = format!(
-        "https://api.telegram.org/file/bot{}/{}",
-        state.config.telegram_key, file_path
-    );
-    let outgoing_request = http::OutgoingHttpRequest {
-        method: "GET".to_string(),
-        version: None,
-        url: download_url,
-        headers: HashMap::new(),
-    };
-    let body_bytes = json!(http::HttpClientAction::Http(outgoing_request))
-        .to_string()
-        .as_bytes()
-        .to_vec();
-    Request::new()
-        .target(Address::new(
-            "our",
-            ProcessId::new(Some("http_client"), "distro", "sys"),
-        ))
-        .body(body_bytes)
-        .context(vec![1])
-        .expects_response(30)
-        .send()
-        .ok()
-}
+    let decoded_response = String::from_utf8(response?.body().to_vec())?;
+    println!("Decoded embedding response: {}", decoded_response);
 
-fn handle_telegram_message(message: &Message, state: &mut Option<State>) -> Option<()> {
-    let state = state.as_ref()?;
-    if *message.source() != state.tg_worker {
-        return None;
-    }
-    let msg = get_last_tg_msg(message)?;
-    let text = msg.text.clone().unwrap_or_default();
-
-    if let Some(voice) = msg.voice.clone() {
-        handle_tg_voice_message(state, voice);
-    }
-    Some(())
-}
-
-fn handle_message(our: &Address, state: &mut Option<State>) -> anyhow::Result<()> {
-    let message = await_message()?;
-    if message.source().node != our.node {
-        return Ok(());
-    }
-
-    match message.source().process.to_string().as_str() {
-        "http_server:distro:sys" | "http_client:distro:sys" => {
-            handle_http_message(&our, &message, state);
-        }
-        _ => {
-            handle_telegram_message(&message, state);
-        }
-    }
     Ok(())
 }
 
 call_init!(init);
 fn init(our: Address) {
-    let _ = http::serve_ui(&our, "ui/", true, false, vec!["/", "/submit_config"]);
-    let mut state = State::fetch();
+    println!("Start");
+    let Ok(openai_address) = spawn_openai_pkg(our) else {
+        println!("Failed spawning open ai pkg");
+        return;
+    };
+    println!("Openai pkg spawned, with address {:?}", openai_address);
 
-    loop {
-        let _ = handle_message(&our, &mut state);
+    match register_openai_api_key(&openai_address) {
+        Ok(_) => println!("Openai api key registered"),
+        Err(e) => println!("Failed registering openai api key: {:?}", e),
     }
+
+    match openai_embedding_request(&openai_address) {
+        Ok(_) => println!("Embedding request successful"),
+        Err(e) => println!("Embedding request failed: {:?}", e),
+    }
+
+    // Openai chat
+
+    // Openai image
+
+    // Register groq api key
+
+    // Groq chat
 }
