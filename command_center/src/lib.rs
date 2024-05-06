@@ -132,21 +132,22 @@ fn groq_chat_request(groq_address: &Address) -> anyhow::Result<()> {
 }
 
 // fn openai_image_request(openai_address: &Address) -> anyhow::Result<()> {
-//     // TODO: Zena
 //     let request = ChatImageRequestBuilder::default()
-//         .model("gtp-4-turbo".to_string())
+//         .model("gpt-4-turbo".to_string())
 //         .messages(vec![ChatImageMessageBuilder::default()
 //             .role("user".to_string())
 //             .content(vec![ChatImageContentBuilder::default()
-//                 .content_type("image".to_string())
+//                 .content_type("image_url".to_string())
 //                 .image_url(Some(ImageUrl {
-//                     url: "https://placekitten.com/200/300".to_string(),
+//                     url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg".to_string(),
 //                 }))
 //                 .build()?])
 //             .build()?])
 //         .build()?;
+
 //     let request = serialize_without_none(&LLMRequest::ChatImage(request))?;
-//     println!("Serialized request: {:?}", request);
+//     let decoded_request = String::from_utf8(request.clone())?;
+//     println!("Decoded chat image request: {}", decoded_request);
 
 //     let response = Request::new()
 //         .target(openai_address)
@@ -183,19 +184,18 @@ fn init(our: Address) {
         Err(e) => println!("Chat request failed: {:?}", e),
     }
 
-    // TODO: Zena: Groq and openai image don't work yet because they're missing the field id. Troubleshoot this. 
     // match openai_image_request(&openai_address) {
     //     Ok(_) => println!("Image request successful"),
     //     Err(e) => println!("Image request failed: {:?}", e),
     // }
 
-    // match register_groq_api_key(&openai_address) {
-    //     Ok(_) => println!("Groq api key registered"),
-    //     Err(e) => println!("Failed registering groq api key: {:?}", e),
-    // }
+    match register_groq_api_key(&openai_address) {
+        Ok(_) => println!("Groq api key registered"),
+        Err(e) => println!("Failed registering groq api key: {:?}", e),
+    }
 
-    // match groq_chat_request(&openai_address) {
-    //     Ok(_) => println!("Groq chat request successful"),
-    //     Err(e) => println!("Groq chat request failed: {:?}", e),
-    // }
+    match groq_chat_request(&openai_address) {
+        Ok(_) => println!("Groq chat request successful"),
+        Err(e) => println!("Groq chat request failed: {:?}", e),
+    }
 }
