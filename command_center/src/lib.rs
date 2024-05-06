@@ -1,8 +1,7 @@
 // use frankenstein::{Message as TgMessage, TelegramApi, UpdateContent, Voice};
 
-use kinode_process_lib::{
-    call_init, println, Address, Request,
-};
+use kinode_process_lib::{call_init, println, Address, Request};
+use serde::Serialize;
 // use openai_whisper::{openai_whisper_request, openai_whisper_response};
 
 // mod structs;
@@ -53,6 +52,29 @@ fn openai_embedding_request(openai_address: &Address) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn openai_chat_request(openai_address: &Address) -> anyhow::Result<()> {
+    let request = ChatRequestBuilder::default()
+        .model("gpt-3.5-turbo".to_string())
+        .messages(vec![MessageBuilder::default()
+            .role("user".to_string())
+            .content("Hello!".to_string())
+            .build()?])
+        .build()?;
+    println!("Request: {:?}", request);
+
+    let request = serde_json::to_vec(&LLMRequest::OpenaiChat(request))?;
+    println!("Serialized request: {:?}", request);
+    let response = Request::new()
+        .target(openai_address)
+        .body(request)
+        .send_and_await_response(30)?;
+
+    let decoded_response = String::from_utf8(response?.body().to_vec())?;
+    println!("Decoded chat response: {}", decoded_response);
+
+    Ok(())
+}
+
 call_init!(init);
 fn init(our: Address) {
     println!("Start");
@@ -70,6 +92,11 @@ fn init(our: Address) {
     match openai_embedding_request(&openai_address) {
         Ok(_) => println!("Embedding request successful"),
         Err(e) => println!("Embedding request failed: {:?}", e),
+    }
+
+    match openai_chat_request(&openai_address) {
+        Ok(_) => println!("Chat request successful"),
+        Err(e) => println!("Chat request failed: {:?}", e),
     }
 
     // Openai chat
