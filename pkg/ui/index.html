@@ -27,6 +27,24 @@
                 document.getElementById('result').textContent = 'Failed to submit key.';
             }
         }
+    
+        async function fetchStatus() {
+            const response = await fetch('http://localhost:8080/command_center:command_center:template.os/status', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            const data = await response.json();
+            if (data.telegram_key) {
+                document.getElementById('telegramKey').value = data.telegram_key;
+            }
+            if (data.openai_key) {
+                document.getElementById('openaiKey').value = data.openai_key;
+            }
+        }
+    
+        window.onload = fetchStatus;
     </script>
 </head>
 <body>
