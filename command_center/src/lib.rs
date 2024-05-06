@@ -189,12 +189,34 @@ fn handle_message(our: &Address, state: &mut Option<State>) -> anyhow::Result<()
             handle_http_message(&our, &message, state);
         }
         _ => {
+            handle_process_message(our, &message, state);
             // TODO: Zena
             // handle_telegram_message(&message, state);
         }
     }
     Ok(())
 }
+
+fn handle_process_message(our: &Address, message: &Message, state: &mut Option<State>) -> anyhow::Result<()> {
+    if message.is_request() {
+        handle_process_request(our, state, &message.body());
+    } else {
+        handle_process_response(message, state);
+    }
+    Ok(())
+}
+
+fn handle_process_request(our: &Address, state: &mut Option<State>, body: &[u8]) -> anyhow::Result<()> {
+    // TODO: Import the llmrequest/sttrequest structs
+    // MATCH BY ADDRESS WITH THE DICT YOU HAVE.
+    Ok(())
+}
+
+fn handle_process_response(message: &Message, state: &mut Option<State>) -> anyhow::Result<()> {
+    Ok(())
+}
+
+
 
 call_init!(init);
 fn init(our: Address) {
