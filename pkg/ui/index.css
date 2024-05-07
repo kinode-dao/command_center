@@ -45,3 +45,37 @@ button:hover {
     border-radius: 5px;
     border: 1px solid #badbcc;
 }
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .question {
+    display: inline-block;
+    margin-left: 5px;
+    color: #000;
+    font-weight: bold;
+    cursor: help;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}

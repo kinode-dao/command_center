@@ -51,23 +51,38 @@
 </head>
 <body>
     <h1>Telegram Bot Configuration</h1>
-    <p>Open Telegram and search for "@BotFather".</p>
-    <p>Start a conversation and type `/newbot`.</p>
-    <p>Follow prompts to create a new bot.</p>
-    <p>Securely copy the API key displayed.</p>
-    <p>Paste the bot API key into the input below.</p>
-    <input type="text" id="telegramKey" placeholder="Enter Telegram Bot API Key">
-    <p>For OpenAI Whisper and LLM functionality, an OpenAI API key is optional:</p>
-    <ol>
-        <li>Visit OpenAI's signup page.</li>
-        <li>Create an account and navigate to the API section.</li>
-        <li>Click "New API Key" to generate a key.</li>
-        <li>Securely copy the API key displayed.</li>
-        <li>Type 'y' to proceed with entering the API key.</li>
-        <li>Paste the API key into the input below.</li>
-    </ol>
-    <input type="text" id="openaiKey" placeholder="Enter OpenAI API Key (Optional)">
-    <input type="text" id="groqKey" placeholder="Enter Groq API Key (Optional)">
+    <div class="tooltip">
+        <input type="text" id="telegramKey" placeholder="Enter Telegram Bot API Key">
+        <span class="question">?</span>
+        <span class="tooltiptext">
+            <ul>
+                <li>Open Telegram and search for "@BotFather".</li>
+                <li>Start a conversation and type `/newbot`.</li>
+                <li>Follow prompts to create a new bot.</li>
+                <li>Securely copy the API key displayed.</li>
+                <li>Paste the bot API key here.</li>
+            </ul>
+        </span>
+    </div>
+    <div class="tooltip">
+        <input type="text" id="openaiKey" placeholder="Enter OpenAI API Key (Optional)">
+        <span class="question">?</span>
+        <span class="tooltiptext">
+            <ul>
+                <li>Visit OpenAI's signup page.</li>
+                <li>Create an account and navigate to the API section.</li>
+                <li>Click "New API Key" to generate a key.</li>
+                <li>Securely copy the API key displayed.</li>
+                <li>Type 'y' to proceed with entering the API key.</li>
+                <li>Paste the API key here.</li>
+            </ul>
+        </span>
+    </div>
+    <div class="tooltip">
+        <input type="text" id="groqKey" placeholder="Enter Groq API Key (Optional)">
+        <span class="question">?</span>
+        <span class="tooltiptext">Enter your Groq API Key here if you have one.</span>
+    </div>
     <button onclick="submitKey()">Submit</button>
     <p id="result"></p>
 </body>
