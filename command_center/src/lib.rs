@@ -122,6 +122,14 @@ fn submit_config(
                         let _ = Request::new().target(addr.clone()).body(req).send();
                     }
                 }
+                Pkg::Telegram => {
+                    // TODO: Zena
+                    // if let Some(tg_bot_token) = &state.config.tg_bot_token {
+                    //     let req = serde_json::to_vec(&TGRequest::RegisterBot(tg_bot_token.clone()))
+                    //         .ok()?;
+                    //     let _ = Request::new().target(addr.clone()).body(req).send();
+                    // }
+                }
             }
         }
         state.save();
