@@ -999,4 +999,5 @@ button:disabled {
 
 input[type="text"] {
     min-width: 300px;
+    align-self: stretch;
 }
