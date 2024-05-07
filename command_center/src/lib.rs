@@ -1,17 +1,16 @@
-// use frankenstein::{Message as TgMessage, TelegramApi, UpdateContent, Voice};
-use serde_json::json;
 use std::collections::HashMap;
 
 use kinode_process_lib::{
-    await_message, call_init, get_blob, http, println, Address, Message, ProcessId, Request,
+    await_message, call_init, get_blob, http, println, Address, Message,  Request,
 };
+use llm_interface::openai::*;
 use openai_whisper::{openai_whisper_request, openai_whisper_response};
+use stt_interface::*;
 
 mod structs;
 use structs::*;
 
 mod tg_api;
-use crate::tg_api::TgResponse;
 
 mod spawners;
 use spawners::*;
@@ -87,7 +86,12 @@ fn handle_telegram_message(message: &Message, state: &mut Option<State>) -> Opti
 }
 
 */
-fn submit_config(our: &Address, body_bytes: &[u8], state: &mut Option<State>, pkgs: &HashMap<Pkg, Address>) -> Option<()> {
+fn submit_config(
+    our: &Address,
+    body_bytes: &[u8],
+    state: &mut Option<State>,
+    pkgs: &HashMap<Pkg, Address>,
+) -> Option<()> {
     let initial_config = serde_json::from_slice::<InitialConfig>(body_bytes).ok()?;
     match state {
         Some(state_) => {
@@ -100,20 +104,41 @@ fn submit_config(our: &Address, body_bytes: &[u8], state: &mut Option<State>, pk
         }
     }
 
-    // TODO: Zena
-    // for (pkg, addr) in pkgs.iter() {
-    //     match pkg {
-    //         Pkg::LLM => {
-    //             llm_interface::openai::LLMRequest::RegisterOpenaiApiKey(())
-
-    //         },
-    //         Pkg::STT => {
-
-    //         },
-    //     }
-    // }
-
     if let Some(ref mut state) = state {
+        for (pkg, addr) in pkgs.iter() {
+            match pkg {
+                Pkg::LLM => {
+                    if let Some(openai_key) = &state.config.openai_key {
+                        let req = serde_json::to_vec(&LLMRequest::RegisterOpenaiApiKey(
+                            RegisterApiKeyRequest {
+                                api_key: openai_key.clone(),
+                            },
+                        ))
+                        .ok()?;
+                        let _ = Request::new().target(addr.clone()).body(req).send();
+                    }
+                    if let Some(groq_key) = &state.config.groq_key {
+                        let req = serde_json::to_vec(
+                            &llm_interface::openai::LLMRequest::RegisterGroqApiKey(
+                                RegisterApiKeyRequest {
+                                    api_key: groq_key.clone(),
+                                },
+                            ),
+                        )
+                        .ok()?;
+                        let _ = Request::new().target(addr.clone()).body(req).send();
+                    }
+                }
+                Pkg::STT => {
+                    if let Some(openai_key) = &state.config.openai_key {
+                        let req =
+                            serde_json::to_vec(&STTRequest::RegisterApiKey(openai_key.clone()))
+                                .ok()?;
+                        let _ = Request::new().target(addr.clone()).body(req).send();
+                    }
+                }
+            }
+        }
         state.save();
 
         http::send_response(
@@ -129,7 +154,12 @@ fn submit_config(our: &Address, body_bytes: &[u8], state: &mut Option<State>, pk
     Some(())
 }
 
-fn handle_http_message(our: &Address, message: &Message, state: &mut Option<State>, pkgs: &HashMap<Pkg, Address>) {
+fn handle_http_message(
+    our: &Address,
+    message: &Message,
+    state: &mut Option<State>,
+    pkgs: &HashMap<Pkg, Address>,
+) {
     match message {
         Message::Request { ref body, .. } => handle_http_request(our, state, body, pkgs),
         Message::Response { .. } => handle_http_response(message, state),
@@ -159,7 +189,12 @@ fn handle_http_response(message: &Message, state: &mut Option<State>) -> Option<
     Some(())
 }
 
-fn handle_http_request(our: &Address, state: &mut Option<State>, body: &[u8], pkgs: &HashMap<Pkg, Address>) -> Option<()> {
+fn handle_http_request(
+    our: &Address,
+    state: &mut Option<State>,
+    body: &[u8],
+    pkgs: &HashMap<Pkg, Address>,
+) -> Option<()> {
     let http_request = http::HttpServerRequest::from_bytes(body).ok()?.request();
     let path = http_request?.path().ok()?;
     let bytes = get_blob()?.bytes;
@@ -209,7 +244,6 @@ fn handle_message(
     }
     Ok(())
 }
-
 
 call_init!(init);
 fn init(our: Address) {
