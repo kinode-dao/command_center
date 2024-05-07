@@ -3,6 +3,8 @@
 pkg/*.wasm
 !pkg/tg.wasm
 !pkg/openai.wasm
+!pkg/speech_to_text.wasm
+!pkg/command_center.wasm
 *.swp
 *.swo
 */wasi_snapshot_preview1.wasm
