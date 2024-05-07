@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use kinode_process_lib::{
-    await_message, call_init, get_blob, http, println, Address, Message,  Request,
+    await_message, call_init, get_blob, http, println, Address, Message, Request,
 };
 use llm_interface::openai::*;
 use stt_interface::*;
@@ -19,7 +19,6 @@ wit_bindgen::generate!({
     world: "process",
 });
 
-
 fn handle_http_message(
     our: &Address,
     message: &Message,
@@ -28,9 +27,8 @@ fn handle_http_message(
 ) {
     match message {
         Message::Request { ref body, .. } => handle_http_request(our, state, body, pkgs),
-        _ => Some({})
-        // Message::Response { .. } => (),
-        // handle_http_response(message, state),
+        _ => Some({}), // Message::Response { .. } => (),
+                       // handle_http_response(message, state),
     };
 }
 
@@ -166,16 +164,34 @@ fn handle_message(
     Ok(())
 }
 
+const ICON: &str = include_str!("icon");
 call_init!(init);
 fn init(our: Address) {
     let _ = http::serve_ui(
         &our,
-        "ui/",
+        "ui",
         true,
         false,
         vec!["/", "/submit_config", "/status"],
     );
     let mut state = State::fetch();
+
+    // add ourselves to the homepage
+    Request::to(("our", "homepage", "homepage", "sys"))
+        .body(
+            serde_json::json!({
+                "Add": {
+                    "label": "Command Center",
+                    "icon": ICON,
+                    "path": "/", // just our root
+                }
+            })
+            .to_string()
+            .as_bytes()
+            .to_vec(),
+        )
+        .send()
+        .unwrap();
 
     let Ok(pkgs) = spawners::spawn_pkgs(&our) else {
         panic!("Failed to spawn pkgs");

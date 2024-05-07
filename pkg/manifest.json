@@ -8,7 +8,8 @@
             "http_server:distro:sys",
             "http_client:distro:sys",
             "openai:llm:kinode",
-            "vfs:distro:sys"
+            "vfs:distro:sys",
+            "homepage:homepage:sys"
         ],
         "grant_capabilities": [],
         "public": true
