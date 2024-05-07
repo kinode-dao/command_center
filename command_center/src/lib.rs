@@ -87,7 +87,7 @@ fn handle_telegram_message(message: &Message, state: &mut Option<State>) -> Opti
 }
 
 */
-fn submit_config(our: &Address, body_bytes: &[u8], state: &mut Option<State>) -> Option<()> {
+fn submit_config(our: &Address, body_bytes: &[u8], state: &mut Option<State>, pkgs: &HashMap<Pkg, Address>) -> Option<()> {
     let initial_config = serde_json::from_slice::<InitialConfig>(body_bytes).ok()?;
     match state {
         Some(state_) => {
@@ -99,6 +99,19 @@ fn submit_config(our: &Address, body_bytes: &[u8], state: &mut Option<State>) ->
             *state = Some(State::new(our, initial_config));
         }
     }
+
+    // TODO: Zena
+    // for (pkg, addr) in pkgs.iter() {
+    //     match pkg {
+    //         Pkg::LLM => {
+    //             llm_interface::openai::LLMRequest::RegisterOpenaiApiKey(())
+
+    //         },
+    //         Pkg::STT => {
+
+    //         },
+    //     }
+    // }
 
     if let Some(ref mut state) = state {
         state.save();
@@ -116,9 +129,9 @@ fn submit_config(our: &Address, body_bytes: &[u8], state: &mut Option<State>) ->
     Some(())
 }
 
-fn handle_http_message(our: &Address, message: &Message, state: &mut Option<State>) {
+fn handle_http_message(our: &Address, message: &Message, state: &mut Option<State>, pkgs: &HashMap<Pkg, Address>) {
     match message {
-        Message::Request { ref body, .. } => handle_http_request(our, state, body),
+        Message::Request { ref body, .. } => handle_http_request(our, state, body, pkgs),
         Message::Response { .. } => handle_http_response(message, state),
     };
 }
@@ -146,7 +159,7 @@ fn handle_http_response(message: &Message, state: &mut Option<State>) -> Option<
     Some(())
 }
 
-fn handle_http_request(our: &Address, state: &mut Option<State>, body: &[u8]) -> Option<()> {
+fn handle_http_request(our: &Address, state: &mut Option<State>, body: &[u8], pkgs: &HashMap<Pkg, Address>) -> Option<()> {
     let http_request = http::HttpServerRequest::from_bytes(body).ok()?.request();
     let path = http_request?.path().ok()?;
     let bytes = get_blob()?.bytes;
@@ -154,10 +167,10 @@ fn handle_http_request(our: &Address, state: &mut Option<State>, body: &[u8]) ->
     match path.as_str() {
         "/status" => {
             let _ = fetch_status();
-        },
+        }
         "/submit_config" => {
-            submit_config(our, &bytes, state);
-        },
+            submit_config(our, &bytes, state, pkgs);
+        }
         _ => {}
     }
     Some(())
@@ -178,7 +191,11 @@ fn fetch_status() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn handle_message(our: &Address, state: &mut Option<State>) -> anyhow::Result<()> {
+fn handle_message(
+    our: &Address,
+    state: &mut Option<State>,
+    pkgs: &HashMap<Pkg, Address>,
+) -> anyhow::Result<()> {
     let message = await_message()?;
     if message.source().node != our.node {
         return Ok(());
@@ -186,49 +203,31 @@ fn handle_message(our: &Address, state: &mut Option<State>) -> anyhow::Result<()
 
     match message.source().process.to_string().as_str() {
         "http_server:distro:sys" | "http_client:distro:sys" => {
-            handle_http_message(&our, &message, state);
+            handle_http_message(&our, &message, state, pkgs);
         }
-        _ => {
-            handle_process_message(our, &message, state);
-            // TODO: Zena
-            // handle_telegram_message(&message, state);
-        }
+        _ => {}
     }
     Ok(())
 }
-
-fn handle_process_message(our: &Address, message: &Message, state: &mut Option<State>) -> anyhow::Result<()> {
-    if message.is_request() {
-        handle_process_request(our, state, &message.body());
-    } else {
-        handle_process_response(message, state);
-    }
-    Ok(())
-}
-
-fn handle_process_request(our: &Address, state: &mut Option<State>, body: &[u8]) -> anyhow::Result<()> {
-    // TODO: Import the llmrequest/sttrequest structs
-    // MATCH BY ADDRESS WITH THE DICT YOU HAVE.
-    Ok(())
-}
-
-fn handle_process_response(message: &Message, state: &mut Option<State>) -> anyhow::Result<()> {
-    Ok(())
-}
-
 
 
 call_init!(init);
 fn init(our: Address) {
-    let _ = http::serve_ui(&our, "ui/", true, false, vec!["/", "/submit_config", "/status"]);
+    let _ = http::serve_ui(
+        &our,
+        "ui/",
+        true,
+        false,
+        vec!["/", "/submit_config", "/status"],
+    );
     let mut state = State::fetch();
 
-    let Ok(_pkgs) = spawners::spawn_pkgs(&our) else {
+    let Ok(pkgs) = spawners::spawn_pkgs(&our) else {
         panic!("Failed to spawn pkgs");
     };
 
     loop {
-        match handle_message(&our, &mut state) {
+        match handle_message(&our, &mut state, &pkgs) {
             Ok(_) => {}
             Err(e) => println!("Error: {:?}", e),
         }

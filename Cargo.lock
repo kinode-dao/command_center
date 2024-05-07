@@ -484,6 +484,7 @@ dependencies = [
  "openai_whisper",
  "serde",
  "serde_json",
+ "stt_interface",
  "url 2.5.0",
  "wit-bindgen 0.24.0",
 ]
@@ -2097,6 +2098,15 @@ name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
+
+[[package]]
+name = "stt_interface"
+version = "0.1.0"
+source = "git+https://github.com/kinode-dao/stt?branch=main#057aa0254248cbf65187f5272e960a92bd647b77"
+dependencies = [
+ "derive_builder",
+ "serde",
+]
 
 [[package]]
 name = "subtle"

@@ -9,6 +9,7 @@ use crate::tg_api::Api;
 pub struct State {
     pub our: Address,
     pub config: InitialConfig,
+    // TODO: Zean: Remove this
     // Non-serializable fields
     pub tg_api: Api,
     pub tg_worker: Address,
@@ -71,5 +72,6 @@ fn hydrate_state(our: &Address, config: InitialConfig) -> anyhow::Result<State> 
 pub struct InitialConfig {
     pub telegram_key: String,
     pub openai_key: Option<String>,
+    pub groq_key: Option<String>,
 }
 

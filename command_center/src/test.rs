@@ -118,8 +118,7 @@ fn groq_chat_request(groq_address: &Address) -> anyhow::Result<()> {
         .build()?;
 
     let request = serialize_without_none(&LLMRequest::GroqChat(request))?;
-    let decoded_request = String::from_utf8(request.clone())?;
-    println!("Decoded Groq chat request: {}", decoded_request);
+
     let response = Request::new()
         .target(groq_address)
         .body(request)

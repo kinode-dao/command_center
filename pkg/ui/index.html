@@ -9,9 +9,11 @@
         async function submitKey() {
             const telegramKey = document.getElementById('telegramKey').value;
             const openaiKey = document.getElementById('openaiKey').value || null;
+            const groqKey = document.getElementById('groqKey').value || null;
             const bodyData = {
                 telegram_key: telegramKey,
-                openai_key: openaiKey
+                openai_key: openaiKey,
+                groq_key: groqKey
             };
             const response = await fetch('http://localhost:8080/command_center:command_center:template.os/submit_config', {
                 method: 'POST',
@@ -65,6 +67,7 @@
         <li>Paste the API key into the input below.</li>
     </ol>
     <input type="text" id="openaiKey" placeholder="Enter OpenAI API Key (Optional)">
+    <input type="text" id="groqKey" placeholder="Enter Groq API Key (Optional)">
     <button onclick="submitKey()">Submit</button>
     <p id="result"></p>
 </body>

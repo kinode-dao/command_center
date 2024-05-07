@@ -6,14 +6,14 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Eq, Hash, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Pkg {
-    Openai,
-    Stt,
+    LLM,
+    STT,
 }
 
 pub fn spawn_pkgs(our: &Address) -> anyhow::Result<HashMap<Pkg, Address>> {
     let mut addresses = HashMap::new();
-    addresses.entry(Pkg::Openai).or_insert(spawn_openai_pkg(our)?);
-    addresses.entry(Pkg::Stt).or_insert(spawn_stt_pkg(our)?);
+    addresses.entry(Pkg::LLM).or_insert(spawn_openai_pkg(our)?);
+    addresses.entry(Pkg::STT).or_insert(spawn_stt_pkg(our)?);
     Ok(addresses)
 }
 
