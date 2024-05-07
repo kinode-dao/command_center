@@ -2,7 +2,7 @@
     {
         "process_name": "command_center",
         "process_wasm_path": "/command_center.wasm",
-        "on_exit": "None",
+        "on_exit": "Restart",
         "request_networking": true,
         "request_capabilities": [
             "http_server:distro:sys",
@@ -12,6 +12,6 @@
             "homepage:homepage:sys"
         ],
         "grant_capabilities": [],
-        "public": true
+        "public": false
     }
 ]
