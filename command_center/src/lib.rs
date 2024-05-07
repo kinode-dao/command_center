@@ -4,7 +4,6 @@ use kinode_process_lib::{
     await_message, call_init, get_blob, http, println, Address, Message,  Request,
 };
 use llm_interface::openai::*;
-use openai_whisper::{openai_whisper_request, openai_whisper_response};
 use stt_interface::*;
 
 mod structs;
@@ -29,7 +28,9 @@ fn handle_http_message(
 ) {
     match message {
         Message::Request { ref body, .. } => handle_http_request(our, state, body, pkgs),
-        Message::Response { .. } => handle_http_response(message, state),
+        _ => Some({})
+        // Message::Response { .. } => (),
+        // handle_http_response(message, state),
     };
 }
 
