@@ -3,7 +3,6 @@ use std::str::FromStr;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
-
 #[derive(Eq, Hash, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Pkg {
     LLM,
@@ -13,20 +12,20 @@ pub enum Pkg {
 
 pub fn spawn_pkgs(our: &Address) -> anyhow::Result<HashMap<Pkg, Address>> {
     let mut addresses = HashMap::new();
-    addresses.entry(Pkg::LLM).or_insert(spawn_openai_pkg(our)?);
-    addresses.entry(Pkg::STT).or_insert(spawn_stt_pkg(our)?);
-    addresses.entry(Pkg::Telegram).or_insert(spawn_tg_pkg(our)?);
+    addresses.insert(Pkg::LLM, spawn_pkg(our, "openai.wasm")?);
+    addresses.insert(Pkg::STT, spawn_pkg(our, "speech_to_text.wasm")?);
+    addresses.insert(Pkg::Telegram, spawn_pkg(our, "tg.wasm")?);
     Ok(addresses)
 }
 
-pub fn spawn_openai_pkg(our: &Address) -> anyhow::Result<Address> {
-    let openai_pkg_path = format!("{}/pkg/openai.wasm", our.package_id());
+fn spawn_pkg(our: &Address, pkg_name: &str) -> anyhow::Result<Address> {
+    let pkg_path = format!("{}/pkg/{}", our.package_id(), pkg_name);
     let our_caps = our_capabilities();
     let http_client = ProcessId::from_str("http_client:distro:sys").unwrap();
 
     let process_id = spawn(
         None,
-        &openai_pkg_path,
+        &pkg_path,
         OnExit::None,
         our_caps,
         vec![http_client],
@@ -35,46 +34,6 @@ pub fn spawn_openai_pkg(our: &Address) -> anyhow::Result<Address> {
 
     Ok(Address {
         node: our.node.clone(),
-        process: process_id.clone(),
-    })
-}
-
-pub fn spawn_stt_pkg(our: &Address) -> anyhow::Result<Address> {
-    let stt_pkg_path = format!("{}/pkg/speech_to_text.wasm", our.package_id());
-    let our_caps = our_capabilities();
-    let http_client = ProcessId::from_str("http_client:distro:sys").unwrap();
-
-    let process_id = spawn(
-        None,
-        &stt_pkg_path,
-        OnExit::None,
-        our_caps,
-        vec![http_client],
-        false,
-    )?;
-
-    Ok(Address {
-        node: our.node.clone(),
-        process: process_id.clone(),
-    })
-}
-
-pub fn spawn_tg_pkg(our: &Address) -> anyhow::Result<Address> {
-    let tg_pkg_path = format!("{}/pkg/tg.wasm", our.package_id());
-    let our_caps = our_capabilities();
-    let http_client = ProcessId::from_str("http_client:distro:sys").unwrap();
-
-    let process_id = spawn(
-        None,
-        &tg_pkg_path,
-        OnExit::None,
-        our_caps,
-        vec![http_client],
-        false,
-    )?;
-
-    Ok(Address {
-        node: our.node.clone(),
-        process: process_id.clone(),
+        process: process_id,
     })
 }
