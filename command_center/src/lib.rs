@@ -179,3 +179,5 @@ fn init(our: Address) {
         }
     }
 }
+
+// TODO: We could let the package spawning be part of the hydration
