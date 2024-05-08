@@ -6,7 +6,7 @@ use crate::Pkg;
 use crate::State;
 use frankenstein::{Message as TgMessage, TelegramApi, UpdateContent, Voice};
 use kinode_process_lib::{
-    await_message, get_blob, http, http::send_request_await_response, http::Method,
+    get_blob, http, http::send_request_await_response, http::Method,
     println, Address, Message, ProcessId, Request,
 };
 use serde_json::json;
@@ -113,13 +113,6 @@ fn get_last_tg_msg(message: &Message) -> Option<TgMessage> {
     Some(msg.clone())
 }
 
-fn handle_http_message(message: &Message, state: &mut Option<State>, pkgs: &HashMap<Pkg, Address>) {
-    match message {
-        Message::Response { .. } => handle_http_response(message, state, pkgs),
-        _ => None,
-    };
-}
-
 pub fn handle_http_response(
     message: &Message,
     state: &mut Option<State>,
@@ -144,25 +137,6 @@ pub fn handle_http_response(
         _ => {}
     }
     Some(())
-}
-
-pub fn handle_message(
-    our: &Address,
-    state: &mut Option<State>,
-    pkgs: &HashMap<Pkg, Address>,
-) -> anyhow::Result<()> {
-    let message = await_message()?;
-    if message.source().node != our.node {
-        return Ok(());
-    }
-
-    match message.source().process.to_string().as_str() {
-        "http_server:distro:sys" | "http_client:distro:sys" => {
-            handle_http_message(&message, state, pkgs);
-            Ok(())
-        }
-        _ => handle_telegram_message(&message, state, pkgs),
-    }
 }
 
 struct Api {

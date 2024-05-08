@@ -174,7 +174,7 @@ fn handle_message(
         "http_server:distro:sys" | "http_client:distro:sys" => {
             handle_http_message(&our, &message, state, pkgs)
         }
-        _ => temp::handle_message(&our, state, pkgs),  // TODO: Zena: Remove this
+        _ => temp::handle_telegram_message(&message, state, pkgs),  // TODO: Zena: Remove this
     }
 }
 
