@@ -1,11 +1,11 @@
 {
-    "name": "command_center",
-    "description": "",
+    "name": "Command Center",
+    "description": "Api Aggregator",
     "image": "",
     "properties": {
         "package_name": "command_center",
         "current_version": "0.1.0",
-        "publisher": "template.os",
+        "publisher": "appattacc.os",
         "mirrors": [],
         "code_hashes": {
             "0.1.0": ""
