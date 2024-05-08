@@ -5,6 +5,7 @@ use kinode_process_lib::{
 };
 use llm_interface::openai::*;
 use stt_interface::*;
+use telegram_interface::*;
 
 mod structs;
 use structs::*;
@@ -121,12 +122,15 @@ fn submit_config(
                     }
                 }
                 Pkg::Telegram => {
-                    // TODO: Zena
-                    // if let Some(tg_bot_token) = &state.config.tg_bot_token {
-                    //     let req = serde_json::to_vec(&TGRequest::RegisterBot(tg_bot_token.clone()))
-                    //         .ok()?;
-                    //     let _ = Request::new().target(addr.clone()).body(req).send();
-                    // }
+                    if let Some(telegram_key) = &state.config.telegram_key {
+                        let init = TgInitialize {
+                            token: telegram_key.clone(),
+                            params: None,
+                        };
+                        let req = serde_json::to_vec(&TgRequest::RegisterApiKey(init))
+                            .ok()?;
+                        let _ = Request::new().target(addr.clone()).body(req).send();
+                    }
                 }
             }
         }
