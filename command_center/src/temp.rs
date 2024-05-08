@@ -1,7 +1,7 @@
 // Note: This is a temp file until we have a great way to message processes that we haven't spawned ourselves. This will just have a custom handle_request.
 // I know it's disgusting, that's why it's in a temp file.
 // Fast >>>>> Robust in this case.
-// Expand TG properly to work without this 
+// Expand TG properly to work without this
 use crate::Pkg;
 use crate::State;
 use frankenstein::{Message as TgMessage, TelegramApi, UpdateContent, Voice};
@@ -17,9 +17,7 @@ use llm_interface::*;
 use stt_interface::*;
 use telegram_interface::*;
 
-pub fn one_shot(
-    pkgs: &HashMap<Pkg, Address>,
-) -> anyhow::Result<()> {
+pub fn one_shot(pkgs: &HashMap<Pkg, Address>) -> anyhow::Result<()> {
     let address = pkgs.get(&Pkg::Telegram).unwrap();
     let subscribe_request = serde_json::to_vec(&TgRequest::Subscribe)?;
     let _ = Request::new()
@@ -43,11 +41,13 @@ fn handle_tg_voice_message(state: &State, voice: Box<Voice>) -> Option<()> {
         .file_id(voice.file_id)
         .build();
     let file_path = api.get_file(&get_file_params).ok()?.result.file_path?;
+    println!("File path: {:?}", file_path);
     let download_url = format!(
         "https://api.telegram.org/file/bot{}/{}",
         state.config.telegram_key.clone().unwrap(),
         file_path // TODO: Zena: All this should die and go toward the telegram process!
     );
+    println!("Download url: {:?}", download_url);
     let outgoing_request = http::OutgoingHttpRequest {
         method: "GET".to_string(),
         version: None,
@@ -58,13 +58,14 @@ fn handle_tg_voice_message(state: &State, voice: Box<Voice>) -> Option<()> {
         .to_string()
         .as_bytes()
         .to_vec();
+    println!("Sending request to get file to http_client");
     Request::new()
         .target(Address::new(
             "our",
             ProcessId::new(Some("http_client"), "distro", "sys"),
         ))
         .body(body_bytes)
-        .context(vec![1])
+        .context(vec![0])
         .expects_response(30)
         .send()
         .ok()
@@ -89,9 +90,12 @@ fn handle_telegram_message(
 
     let msg: TgMessage = get_last_tg_msg(&message)
         .ok_or_else(|| anyhow::anyhow!("Failed to parse telegram update"))?;
-    let _text = msg.text.clone().unwrap_or_default();
+    let text = msg.text.clone().unwrap_or_default();
+    println!("Received text: {:?}", text);
+
 
     if let Some(voice) = msg.voice.clone() {
+        println!("Received voice message");
         handle_tg_voice_message(state, voice);
     }
 
@@ -110,31 +114,33 @@ fn get_last_tg_msg(message: &Message) -> Option<TgMessage> {
     Some(msg.clone())
 }
 
-fn handle_http_message(message: &Message, state: &mut Option<State>) {
+fn handle_http_message(message: &Message, state: &mut Option<State>, pkgs: &HashMap<Pkg, Address>) {
     match message {
-        Message::Response { .. } => handle_http_response(message, state),
+        Message::Response { .. } => handle_http_response(message, state, pkgs),
         _ => None,
     };
 }
 
-fn handle_http_response(message: &Message, state: &mut Option<State>) -> Option<()> {
+fn handle_http_response(
+    message: &Message,
+    state: &mut Option<State>,
+    pkgs: &HashMap<Pkg, Address>,
+) -> Option<()> {
     let context = message.context()?;
     let _state = state.as_ref()?;
 
     match context[0] {
         0 => {
-            // TODO: Do nothing?
-            // Result of voice message transcription
-            // let text = openai_whisper_response().ok()?;
-            // println!("Got text: {:?}", text);
-        }
-        1 => {
-            // let bytes = get_blob()?.bytes;
-            // TODO: Send and await stt
+            println!("Received response from telegram file");
+            let bytes = get_blob()?.bytes;
+            let request = serde_json::to_vec(&STTRequest::OpenaiTranscribe(bytes)).ok()?;
 
-            // if let Some(openai_key) = &state.config.openai_key {
-            //     openai_whisper_request(&bytes, &openai_key, 0);
-            // }
+            let response = Request::new()
+                .target(pkgs.get(&Pkg::STT).unwrap())
+                .body(request)
+                .send_and_await_response(30).ok()?.ok()?;
+            let text = serde_json::from_slice::<STTResponse>(&response.body()).ok()?;
+            println!("Transcribed text: {:?}", text);
         }
         _ => {}
     }
@@ -153,12 +159,10 @@ pub fn handle_message(
 
     match message.source().process.to_string().as_str() {
         "http_server:distro:sys" | "http_client:distro:sys" => {
-            handle_http_message(&message, state);
+            handle_http_message(&message, state, pkgs);
             Ok(())
         }
-        _ => {
-           handle_telegram_message(&our, &message, state, pkgs)
-        }
+        _ => handle_telegram_message(&our, &message, state, pkgs),
     }
 }
 
