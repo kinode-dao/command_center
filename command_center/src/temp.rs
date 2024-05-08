@@ -11,14 +11,41 @@ use kinode_process_lib::{
 };
 use serde_json::json;
 use std::collections::HashMap;
+use serde::Serialize;
+use serde_json::Value;
 use std::{path::PathBuf, str::FromStr};
 
-// use llm_interface::*;
+use llm_interface::openai::*;
 use stt_interface::*;
 use telegram_interface::*;
 
 // TODO: Zena: For demo purposes. 
 const ID: i64 = 6808906235;
+
+pub fn serialize_without_none<T: Serialize>(input: &T) -> serde_json::Result<Vec<u8>> {
+    let value = serde_json::to_value(input)?;
+    let cleaned_value = remove_none(&value);
+    serde_json::to_vec(&cleaned_value)
+}
+
+fn remove_none(value: &Value) -> Value {
+    match value {
+        Value::Object(map) => {
+            let mut cleaned_map = serde_json::Map::new();
+            for (k, v) in map {
+                let cleaned_value = remove_none(v);
+                if !cleaned_value.is_null() {
+                    cleaned_map.insert(k.clone(), cleaned_value);
+                }
+            }
+            Value::Object(cleaned_map)
+        },
+        Value::Array(vec) => {
+            Value::Array(vec.iter().map(remove_none).filter(|v| !v.is_null()).collect())
+        },
+        _ => value.clone(),
+    }
+}
 
 pub fn one_shot(pkgs: &HashMap<Pkg, Address>) -> anyhow::Result<()> {
     let address = pkgs.get(&Pkg::Telegram).unwrap();
@@ -140,18 +167,44 @@ pub fn handle_http_response(
             println!("Transcribed text: {:?}", response);
             match response {
                 STTResponse::OpenaiTranscribed(text) => {
-                    let params = SendMessageParams::builder()
-                        .chat_id(ChatId::Integer(ID))
-                        .text(text)
-                        .build();
+                    let request = ChatRequestBuilder::default()
+                        .model("llama3-8b-8192".to_string())
+                        .messages(vec![MessageBuilder::default()
+                            .role("user".to_string())
+                            .content(text)
+                            .build().ok()?])
+                        .build().ok()?;
 
-                    let api = Api {
-                        api_url: format!(
-                            "https://api.telegram.org/bot{}",
-                            _state.config.telegram_key.clone().unwrap()
-                        ),
-                    };
-                    let _ = api.send_message(&params);
+                    let request = serialize_without_none(&LLMRequest::GroqChat(request)).ok()?;
+
+                    let response = Request::new()
+                        .target(pkgs.get(&Pkg::LLM).unwrap())
+                        .body(request)
+                        .send_and_await_response(30).ok()?.ok()?;
+
+                    let parsed_response = serde_json::from_slice::<LLMResponse>(&response.body()).ok()?;
+                    match parsed_response {
+                        LLMResponse::Chat(chat) => {
+                            let response = chat.choices[0].message.content.clone();
+
+                            // Send the message
+                            let params = SendMessageParams::builder()
+                                .chat_id(ChatId::Integer(ID))
+                                .text(response)
+                                .build();
+
+                            let api = Api {
+                                api_url: format!(
+                                    "https://api.telegram.org/bot{}",
+                                    _state.config.telegram_key.clone().unwrap()
+                                ),
+                            };
+                            let _ = api.send_message(&params);
+                        }
+                        _ => (),
+                    }
+
+
                 }
                 _ => (),
             }
