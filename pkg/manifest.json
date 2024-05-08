@@ -11,7 +11,9 @@
             "vfs:distro:sys",
             "homepage:homepage:sys"
         ],
-        "grant_capabilities": [],
+        "grant_capabilities": [
+            "http_server:distro:sys"
+        ],
         "public": false
     }
 ]

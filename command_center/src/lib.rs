@@ -25,12 +25,11 @@ fn handle_http_message(
     message: &Message,
     state: &mut Option<State>,
     pkgs: &HashMap<Pkg, Address>,
-) {
+) -> anyhow::Result<()> {
     match message {
         Message::Request { ref body, .. } => handle_http_request(our, state, body, pkgs),
-        _ => Some({}), // Message::Response { .. } => (),
-                       // handle_http_response(message, state),
-    };
+        _ => Ok(()),
+    }
 }
 
 fn handle_http_request(
@@ -38,21 +37,16 @@ fn handle_http_request(
     state: &mut Option<State>,
     body: &[u8],
     pkgs: &HashMap<Pkg, Address>,
-) -> Option<()> {
-    let http_request = http::HttpServerRequest::from_bytes(body).ok()?.request();
-    let path = http_request?.path().ok()?;
-    let bytes = get_blob()?.bytes;
+) -> anyhow::Result<()> {
+    let http_request = http::HttpServerRequest::from_bytes(body)?.request().ok_or_else(|| anyhow::anyhow!("Failed to parse http request"))?;
+    let path = http_request.path()?;
+    let bytes = get_blob().ok_or_else(|| anyhow::anyhow!("Failed to get blob"))?.bytes;
 
     match path.as_str() {
-        "/status" => {
-            let _ = fetch_status();
-        }
-        "/submit_config" => {
-            submit_config(our, &bytes, state, pkgs);
-        }
-        _ => {}
+        "/status" => fetch_status(),
+        "/submit_config" => submit_config(our, &bytes, state, pkgs),
+        _ => Ok(()),
     }
-    Some(())
 }
 
 fn fetch_status() -> anyhow::Result<()> {
@@ -75,8 +69,8 @@ fn submit_config(
     body_bytes: &[u8],
     state: &mut Option<State>,
     pkgs: &HashMap<Pkg, Address>,
-) -> Option<()> {
-    let initial_config = serde_json::from_slice::<InitialConfig>(body_bytes).ok()?;
+) -> anyhow::Result<()> {
+    let initial_config = serde_json::from_slice::<InitialConfig>(body_bytes)?;
     match state {
         Some(state_) => {
             println!("Modifying state to {:?}", initial_config);
@@ -89,7 +83,12 @@ fn submit_config(
     }
 
     if let Some(ref mut state) = state {
+        println!("Packages are {:?}", pkgs);
+        println!("****");
         for (pkg, addr) in pkgs.iter() {
+            println!("Registering pkg {:?}", pkg);
+            println!("Addr: {:?}", addr);
+            println!("---");
             match pkg {
                 Pkg::LLM => {
                     if let Some(openai_key) = &state.config.openai_key {
@@ -97,9 +96,16 @@ fn submit_config(
                             RegisterApiKeyRequest {
                                 api_key: openai_key.clone(),
                             },
-                        ))
-                        .ok()?;
-                        let _ = Request::new().target(addr.clone()).body(req).send();
+                        ))?;
+                        let result = Request::new()
+                            .target(addr.clone())
+                            .body(req)
+                            .send_and_await_response(5)??
+                            .body()
+                            .to_vec();
+                        let decoded_result = String::from_utf8(result)
+                            .unwrap_or_else(|_| "Failed to decode response".to_string());
+                        println!("Decoded OpenaiLLM Result: {}", decoded_result);
                     }
                     if let Some(groq_key) = &state.config.groq_key {
                         let req = serde_json::to_vec(
@@ -108,17 +114,31 @@ fn submit_config(
                                     api_key: groq_key.clone(),
                                 },
                             ),
-                        )
-                        .ok()?;
-                        let _ = Request::new().target(addr.clone()).body(req).send();
+                        )?;
+                        let result = Request::new()
+                            .target(addr.clone())
+                            .body(req)
+                            .send_and_await_response(5)??
+                            .body()
+                            .to_vec();
+                        let decoded_result = String::from_utf8(result)
+                            .unwrap_or_else(|_| "Failed to decode response".to_string());
+                        println!("GroqLLM Result: {}", decoded_result);
                     }
                 }
                 Pkg::STT => {
                     if let Some(openai_key) = &state.config.openai_key {
                         let req =
-                            serde_json::to_vec(&STTRequest::RegisterApiKey(openai_key.clone()))
-                                .ok()?;
-                        let _ = Request::new().target(addr.clone()).body(req).send();
+                            serde_json::to_vec(&STTRequest::RegisterApiKey(openai_key.clone()))?;
+                        let result = Request::new()
+                            .target(addr.clone())
+                            .body(req)
+                            .send_and_await_response(5)??
+                            .body()
+                            .to_vec();
+                        let decoded_result = String::from_utf8(result)
+                            .unwrap_or_else(|_| "Failed to decode response".to_string());
+                        println!("STT Openai Result: {}", decoded_result);
                     }
                 }
                 Pkg::Telegram => {
@@ -127,9 +147,16 @@ fn submit_config(
                             token: telegram_key.clone(),
                             params: None,
                         };
-                        let req = serde_json::to_vec(&TgRequest::RegisterApiKey(init))
-                            .ok()?;
-                        let _ = Request::new().target(addr.clone()).body(req).send();
+                        let req = serde_json::to_vec(&TgRequest::RegisterApiKey(init))?;
+                        let result = Request::new()
+                            .target(addr.clone())
+                            .body(req)
+                            .send_and_await_response(5)??
+                            .body()
+                            .to_vec();
+                        let decoded_result = String::from_utf8(result)
+                            .unwrap_or_else(|_| "Failed to decode response".to_string());
+                        println!("Telegram Result: {}", decoded_result);
                     }
                 }
             }
@@ -146,7 +173,7 @@ fn submit_config(
         );
     }
 
-    Some(())
+    Ok(())
 }
 
 fn handle_message(
@@ -161,11 +188,10 @@ fn handle_message(
 
     match message.source().process.to_string().as_str() {
         "http_server:distro:sys" | "http_client:distro:sys" => {
-            handle_http_message(&our, &message, state, pkgs);
+            handle_http_message(&our, &message, state, pkgs)
         }
-        _ => {}
+        _ => Ok(()),
     }
-    Ok(())
 }
 
 const ICON: &str = include_str!("icon");

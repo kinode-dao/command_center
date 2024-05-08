@@ -3,7 +3,7 @@ use std::str::FromStr;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
-#[derive(Eq, Hash, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Pkg {
     LLM,
     STT,
