@@ -155,7 +155,7 @@ fn submit_config(
     }
 
     // TODO: Zena remove this
-    temp::one_shot(our, state, pkgs)?;
+    temp::one_shot(pkgs)?;
 
     Ok(())
 }
