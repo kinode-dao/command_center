@@ -1,6 +1,6 @@
 [
     {
-        "process_name": "command_center",
+        "process_name": "main",
         "process_wasm_path": "/command_center.wasm",
         "on_exit": "Restart",
         "request_networking": true,
