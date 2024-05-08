@@ -197,8 +197,6 @@ fn init(our: Address) {
         panic!("Failed to spawn pkgs");
     };
 
-    println!("begin");
-
     loop {
         match handle_message(&our, &mut state, &pkgs) {
             Ok(_) => {}
