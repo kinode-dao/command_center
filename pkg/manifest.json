@@ -12,7 +12,8 @@
             "homepage:homepage:sys"
         ],
         "grant_capabilities": [
-            "http_server:distro:sys"
+            "http_server:distro:sys",
+            "http_client:distro:sys"
         ],
         "public": false
     }

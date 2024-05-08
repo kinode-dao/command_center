@@ -30,7 +30,7 @@ fn handle_http_message(
 ) -> anyhow::Result<()> {
     match message {
         Message::Request { ref body, .. } => handle_http_request(our, state, body, pkgs),
-        _ => Ok(()),
+        Message::Response { .. } => temp::handle_http_response(message, state, pkgs).ok_or_else(|| anyhow::anyhow!("Failed to handle http response")), //TODO: Zena: Remove this
     }
 }
 
@@ -56,7 +56,7 @@ fn handle_http_request(
 }
 
 fn fetch_status() -> anyhow::Result<()> {
-    let state = State::fetch().ok_or_else(|| anyhow::anyhow!("Failed to fetch state"))?;
+    let state = State::fetch().ok_or_else(|| anyhow::anyhow!("State being fetched for the first time (or failed)"))?;
     let config = &state.config;
     let response_body = serde_json::to_string(&config)?;
     http::send_response(
@@ -174,7 +174,7 @@ fn handle_message(
         "http_server:distro:sys" | "http_client:distro:sys" => {
             handle_http_message(&our, &message, state, pkgs)
         }
-        _ => Ok(()),
+        _ => temp::handle_message(&our, state, pkgs),  // TODO: Zena: Remove this
     }
 }
 
@@ -215,11 +215,6 @@ fn init(our: Address) {
         match handle_message(&our, &mut state, &pkgs) {
             Ok(_) => {}
             Err(e) => println!("Error: {:?}", e),
-        }
-
-        match temp::handle_message(&our, &mut state, &pkgs) {
-            Ok(_) => {}
-            Err(e) => println!("Temp Error: {:?}", e),
         }
     }
 }

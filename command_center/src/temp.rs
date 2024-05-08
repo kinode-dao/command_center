@@ -6,14 +6,14 @@ use crate::Pkg;
 use crate::State;
 use frankenstein::{Message as TgMessage, TelegramApi, UpdateContent, Voice};
 use kinode_process_lib::{
-    await_message, call_init, get_blob, http, http::send_request_await_response, http::Method,
+    await_message, get_blob, http, http::send_request_await_response, http::Method,
     println, Address, Message, ProcessId, Request,
 };
 use serde_json::json;
 use std::collections::HashMap;
 use std::{path::PathBuf, str::FromStr};
 
-use llm_interface::*;
+// use llm_interface::*;
 use stt_interface::*;
 use telegram_interface::*;
 
@@ -71,16 +71,12 @@ fn handle_tg_voice_message(state: &State, voice: Box<Voice>) -> Option<()> {
         .ok()
 }
 
-fn handle_telegram_message(
-    our: &Address,
+pub fn handle_telegram_message(
     message: &Message,
     state: &mut Option<State>,
     pkgs: &HashMap<Pkg, Address>,
 ) -> anyhow::Result<()> {
     let tg_address = pkgs.get(&Pkg::Telegram).unwrap();
-    if message.source().node != our.node {
-        return Ok(());
-    }
     let state = state
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("State not initialized"))?;
@@ -88,8 +84,9 @@ fn handle_telegram_message(
         return Ok(());
     }
 
-    let msg: TgMessage = get_last_tg_msg(&message)
-        .ok_or_else(|| anyhow::anyhow!("Failed to parse telegram update"))?;
+    let Some(msg) = get_last_tg_msg(&message) else {
+        return Ok(());
+    };
     let text = msg.text.clone().unwrap_or_default();
     println!("Received text: {:?}", text);
 
@@ -109,7 +106,9 @@ fn get_last_tg_msg(message: &Message) -> Option<TgMessage> {
     let update = tg_update.updates.last()?;
     let msg = match &update.content {
         UpdateContent::Message(msg) | UpdateContent::ChannelPost(msg) => msg,
-        _ => return None,
+        _ => {
+            return None;
+        }
     };
     Some(msg.clone())
 }
@@ -121,7 +120,7 @@ fn handle_http_message(message: &Message, state: &mut Option<State>, pkgs: &Hash
     };
 }
 
-fn handle_http_response(
+pub fn handle_http_response(
     message: &Message,
     state: &mut Option<State>,
     pkgs: &HashMap<Pkg, Address>,
@@ -162,7 +161,7 @@ pub fn handle_message(
             handle_http_message(&message, state, pkgs);
             Ok(())
         }
-        _ => handle_telegram_message(&our, &message, state, pkgs),
+        _ => handle_telegram_message(&message, state, pkgs),
     }
 }
 
