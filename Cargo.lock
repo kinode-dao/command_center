@@ -29,6 +29,17 @@ dependencies = [
 [[package]]
 name = "alloy-json-rpc"
 version = "0.1.0"
+source = "git+https://github.com/alloy-rs/alloy.git?rev=098ad56#098ad5657d55bbc5fe9469ede2a9ca79def738f2"
+dependencies = [
+ "alloy-primitives",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "alloy-json-rpc"
+version = "0.1.0"
 source = "git+https://github.com/alloy-rs/alloy.git?rev=6f8ebb4#6f8ebb45afca1a201a11d421ec46db0f7a1d8d08"
 dependencies = [
  "alloy-primitives",
@@ -84,6 +95,19 @@ dependencies = [
 [[package]]
 name = "alloy-rpc-types"
 version = "0.1.0"
+source = "git+https://github.com/alloy-rs/alloy.git?rev=098ad56#098ad5657d55bbc5fe9469ede2a9ca79def738f2"
+dependencies = [
+ "alloy-primitives",
+ "alloy-rlp",
+ "itertools 0.12.1",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "alloy-rpc-types"
+version = "0.1.0"
 source = "git+https://github.com/alloy-rs/alloy.git?rev=6f8ebb4#6f8ebb45afca1a201a11d421ec46db0f7a1d8d08"
 dependencies = [
  "alloy-primitives",
@@ -97,9 +121,25 @@ dependencies = [
 [[package]]
 name = "alloy-transport"
 version = "0.1.0"
+source = "git+https://github.com/alloy-rs/alloy.git?rev=098ad56#098ad5657d55bbc5fe9469ede2a9ca79def738f2"
+dependencies = [
+ "alloy-json-rpc 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=098ad56)",
+ "base64 0.21.7",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tower",
+ "url 2.5.0",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
+name = "alloy-transport"
+version = "0.1.0"
 source = "git+https://github.com/alloy-rs/alloy.git?rev=6f8ebb4#6f8ebb45afca1a201a11d421ec46db0f7a1d8d08"
 dependencies = [
- "alloy-json-rpc",
+ "alloy-json-rpc 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=6f8ebb4)",
  "base64 0.21.7",
  "futures-util",
  "serde",
@@ -485,6 +525,7 @@ dependencies = [
  "serde",
  "serde_json",
  "stt_interface",
+ "telegram_interface",
  "url 2.5.0",
  "wit-bindgen 0.24.0",
 ]
@@ -1138,10 +1179,31 @@ name = "kinode_process_lib"
 version = "0.6.0"
 source = "git+https://github.com/kinode-dao/process_lib?tag=v0.6.0#ccf9db2493ec1e112f9146994f852b7bb119dbb6"
 dependencies = [
- "alloy-json-rpc",
+ "alloy-json-rpc 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=6f8ebb4)",
  "alloy-primitives",
- "alloy-rpc-types",
- "alloy-transport",
+ "alloy-rpc-types 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=6f8ebb4)",
+ "alloy-transport 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=6f8ebb4)",
+ "anyhow",
+ "bincode",
+ "http",
+ "mime_guess 2.0.4",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "url 2.5.0",
+ "wit-bindgen 0.17.0",
+]
+
+[[package]]
+name = "kinode_process_lib"
+version = "0.6.0"
+source = "git+https://github.com/kinode-dao/process_lib?rev=3232423#323242399efdcdad02e7f31bb6a9cc5eec048610"
+dependencies = [
+ "alloy-json-rpc 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=098ad56)",
+ "alloy-primitives",
+ "alloy-rpc-types 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=098ad56)",
+ "alloy-transport 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=098ad56)",
  "anyhow",
  "bincode",
  "http",
@@ -1159,10 +1221,10 @@ name = "kinode_process_lib"
 version = "0.6.0"
 source = "git+https://github.com/kinode-dao/process_lib?rev=84b3d84#84b3d84c7c31185f15691a288f1b45dbffb18fe2"
 dependencies = [
- "alloy-json-rpc",
+ "alloy-json-rpc 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=6f8ebb4)",
  "alloy-primitives",
- "alloy-rpc-types",
- "alloy-transport",
+ "alloy-rpc-types 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=6f8ebb4)",
+ "alloy-transport 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=6f8ebb4)",
  "anyhow",
  "bincode",
  "http",
@@ -1214,11 +1276,10 @@ checksum = "01cda141df6706de531b6c46c3a33ecca755538219bd484262fa09410c13539c"
 [[package]]
 name = "llm_interface"
 version = "0.1.0"
-source = "git+https://github.com/kinode-dao/llm?branch=builder#213b280a7edc46ea61f2e6bf8e409e2431f97aa4"
+source = "git+https://github.com/kinode-dao/llm?branch=interface#2bd3067f13e319a7128481598a7e5ae248a924e5"
 dependencies = [
  "anyhow",
  "derive_builder",
- "kinode_process_lib 0.6.0 (git+https://github.com/kinode-dao/process_lib?tag=v0.6.0)",
  "serde",
  "serde_json",
 ]
@@ -2102,7 +2163,7 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 [[package]]
 name = "stt_interface"
 version = "0.1.0"
-source = "git+https://github.com/kinode-dao/stt?branch=main#057aa0254248cbf65187f5272e960a92bd647b77"
+source = "git+https://github.com/kinode-dao/stt?branch=interface#43776db80d97b61af5c109939ddb7ded90262b2d"
 dependencies = [
  "derive_builder",
  "serde",
@@ -2141,6 +2202,22 @@ name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
+
+[[package]]
+name = "telegram_interface"
+version = "0.1.0"
+source = "git+https://github.com/kinode-dao/telegram-bot/?branch=zen/interface#f81f83731d34fcf8ab54e38f969754adc256d174"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "frankenstein",
+ "kinode_process_lib 0.6.0 (git+https://github.com/kinode-dao/process_lib?rev=3232423)",
+ "multipart",
+ "serde",
+ "serde_json",
+ "url 2.5.0",
+ "wit-bindgen 0.17.0",
+]
 
 [[package]]
 name = "tempfile"
