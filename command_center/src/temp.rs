@@ -4,10 +4,10 @@
 // Expand TG properly to work without this
 use crate::Pkg;
 use crate::State;
-use frankenstein::{Message as TgMessage, TelegramApi, UpdateContent, Voice};
+use frankenstein::{Message as TgMessage, SendMessageParams, TelegramApi, UpdateContent, Voice, ChatId};
 use kinode_process_lib::{
-    get_blob, http, http::send_request_await_response, http::Method,
-    println, Address, Message, ProcessId, Request,
+    get_blob, http, http::send_request_await_response, http::Method, println, Address, Message,
+    ProcessId, Request,
 };
 use serde_json::json;
 use std::collections::HashMap;
@@ -16,6 +16,9 @@ use std::{path::PathBuf, str::FromStr};
 // use llm_interface::*;
 use stt_interface::*;
 use telegram_interface::*;
+
+// TODO: Zena: For demo purposes. 
+const ID: i64 = 6808906235;
 
 pub fn one_shot(pkgs: &HashMap<Pkg, Address>) -> anyhow::Result<()> {
     let address = pkgs.get(&Pkg::Telegram).unwrap();
@@ -89,7 +92,7 @@ pub fn handle_telegram_message(
     };
     let text = msg.text.clone().unwrap_or_default();
     println!("Received text: {:?}", text);
-
+    println!("Id is {:?}", msg.chat.id);
 
     if let Some(voice) = msg.voice.clone() {
         println!("Received voice message");
@@ -130,9 +133,28 @@ pub fn handle_http_response(
             let response = Request::new()
                 .target(pkgs.get(&Pkg::STT).unwrap())
                 .body(request)
-                .send_and_await_response(30).ok()?.ok()?;
-            let text = serde_json::from_slice::<STTResponse>(&response.body()).ok()?;
-            println!("Transcribed text: {:?}", text);
+                .send_and_await_response(30)
+                .ok()?
+                .ok()?;
+            let response = serde_json::from_slice::<STTResponse>(&response.body()).ok()?;
+            println!("Transcribed text: {:?}", response);
+            match response {
+                STTResponse::OpenaiTranscribed(text) => {
+                    let params = SendMessageParams::builder()
+                        .chat_id(ChatId::Integer(ID))
+                        .text(text)
+                        .build();
+
+                    let api = Api {
+                        api_url: format!(
+                            "https://api.telegram.org/bot{}",
+                            _state.config.telegram_key.clone().unwrap()
+                        ),
+                    };
+                    let _ = api.send_message(&params);
+                }
+                _ => (),
+            }
         }
         _ => {}
     }
