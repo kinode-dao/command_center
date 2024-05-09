@@ -19,12 +19,13 @@ pub fn spawn_pkgs(our: &Address) -> anyhow::Result<HashMap<Pkg, Address>> {
 }
 
 fn spawn_pkg(our: &Address, pkg_name: &str) -> anyhow::Result<Address> {
+    let name = pkg_name.split('.').next();
     let pkg_path = format!("{}/pkg/{}", our.package_id(), pkg_name);
     let our_caps = our_capabilities();
     let http_client = ProcessId::from_str("http_client:distro:sys").unwrap();
 
     let process_id = spawn(
-        None,
+        name,
         &pkg_path,
         OnExit::None,
         our_caps,
