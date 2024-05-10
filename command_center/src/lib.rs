@@ -151,7 +151,6 @@ fn submit_config(
             b"{\"message\": \"success\"}".to_vec(),
         );
     }
-
     Ok(())
 }
 
