@@ -15,8 +15,6 @@ mod tg_api;
 mod spawners;
 use spawners::*;
 
-mod temp;
-
 wit_bindgen::generate!({
     path: "wit",
     world: "process",
@@ -30,7 +28,7 @@ fn handle_http_message(
 ) -> anyhow::Result<()> {
     match message {
         Message::Request { ref body, .. } => handle_http_request(our, state, body, pkgs),
-        Message::Response { .. } => temp::handle_http_response(message, state, pkgs).ok_or_else(|| anyhow::anyhow!("Failed to handle http response")), //TODO: Zena: Remove this
+        Message::Response { .. } => Ok(()),
     }
 }
 
@@ -154,9 +152,6 @@ fn submit_config(
         );
     }
 
-    // TODO: Zena remove this
-    temp::one_shot(pkgs)?;
-
     Ok(())
 }
 
@@ -174,7 +169,7 @@ fn handle_message(
         "http_server:distro:sys" | "http_client:distro:sys" => {
             handle_http_message(&our, &message, state, pkgs)
         }
-        _ => temp::handle_telegram_message(&message, state, pkgs),  // TODO: Zena: Remove this
+        _ => Ok(()),
     }
 }
 
