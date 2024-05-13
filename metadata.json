@@ -1,16 +1,16 @@
 {
     "name": "Command Center",
     "description": "Api Aggregator",
-    "image": "",
+    "image": "https://i.imgur.com/ZwDldAV.jpeg",
     "properties": {
         "package_name": "command_center",
         "current_version": "0.1.0",
         "publisher": "appattacc.os",
-        "mirrors": [],
+        "mirrors": ["appattacc.os"],
         "code_hashes": {
-            "0.1.0": ""
+            "0.1.0": "0efa07dfecb068d4255b16b733217b77424a8524bd88c3664f50d66324bab1a3"
         }
     },
-    "external_url": "",
+    "external_url": "https://github.com/kinode-dao/command_center",
     "animation_url": ""
 }
