@@ -54,7 +54,8 @@ fn handle_http_request(
 }
 
 fn fetch_status() -> anyhow::Result<()> {
-    let state = State::fetch().ok_or_else(|| anyhow::anyhow!("State being fetched for the first time (or failed)"))?;
+    let state = State::fetch()
+        .ok_or_else(|| anyhow::anyhow!("State being fetched for the first time (or failed)"))?;
     let config = &state.config;
     let response_body = serde_json::to_string(&config)?;
     http::send_response(
@@ -201,9 +202,14 @@ fn init(our: Address) {
         .send()
         .unwrap();
 
+    // spawn packages (stt, groq, tg)
     let Ok(pkgs) = spawners::spawn_pkgs(&our) else {
         panic!("Failed to spawn pkgs");
     };
+    // spawn ai chatbot
+    // let Ok(chatbot_addr) = spawners::spawn_pkg(&our, "ai_chatbot_demo.wasm") else {
+    //     panic!("Failed to spawn ai chatbot");
+    // };
 
     loop {
         match handle_message(&our, &mut state, &pkgs) {

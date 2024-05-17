@@ -27,6 +27,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ai_chatbot_demo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "frankenstein",
+ "kinode_process_lib 0.6.0 (git+https://github.com/kinode-dao/process_lib?rev=84b3d84)",
+ "llm_interface",
+ "serde",
+ "serde_json",
+ "stt_interface",
+ "telegram_interface",
+ "wit-bindgen 0.24.0",
+]
+
+[[package]]
 name = "alloy-json-rpc"
 version = "0.1.0"
 source = "git+https://github.com/alloy-rs/alloy.git?rev=098ad56#098ad5657d55bbc5fe9469ede2a9ca79def738f2"

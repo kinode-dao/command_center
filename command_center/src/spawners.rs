@@ -1,7 +1,7 @@
-use kinode_process_lib::{Address, ProcessId, OnExit, spawn, our_capabilities};
-use std::str::FromStr;
+use kinode_process_lib::{our_capabilities, spawn, Address, OnExit, ProcessId};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
+use std::str::FromStr;
 
 #[derive(Debug, Eq, Hash, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Pkg {
@@ -18,7 +18,7 @@ pub fn spawn_pkgs(our: &Address) -> anyhow::Result<HashMap<Pkg, Address>> {
     Ok(addresses)
 }
 
-fn spawn_pkg(our: &Address, pkg_name: &str) -> anyhow::Result<Address> {
+pub fn spawn_pkg(our: &Address, pkg_name: &str) -> anyhow::Result<Address> {
     let name = pkg_name.split('.').next();
     let pkg_path = format!("{}/pkg/{}", our.package_id(), pkg_name);
     let our_caps = our_capabilities();
@@ -32,7 +32,7 @@ fn spawn_pkg(our: &Address, pkg_name: &str) -> anyhow::Result<Address> {
         vec![http_client],
         false,
     )?;
-
+    println!("spawn_pkg: process_id = {:?}", process_id);
     Ok(Address {
         node: our.node.clone(),
         process: process_id,
