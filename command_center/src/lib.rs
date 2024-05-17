@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use kinode_process_lib::{
     await_message, call_init, get_blob, http, println, Address, Message, Request,
+    kernel_types::Capability, kernel_types::KernelCommand::GrantCapabilities, ProcessId
 };
 use llm_interface::openai::*;
 use stt_interface::*;
@@ -202,10 +203,76 @@ fn init(our: Address) {
         .send()
         .unwrap();
 
+    let chatbot_addr = Address::new(&our.node, ("ai_chatbot_demo", "command_center", "appattacc.os"));
+
     // spawn packages (stt, groq, tg)
     let Ok(pkgs) = spawners::spawn_pkgs(&our) else {
         panic!("Failed to spawn pkgs");
     };
+
+    GrantCapabilities {
+        target: chatbot_addr.process.clone(),
+        capabilities: vec![
+            {
+                Capability {
+                    issuer: Address::new(&our.node, ("http:server", "distro", "sys")),
+                    params: "".to_string(),
+                }
+            },
+            {
+                Capability {
+                    issuer: Address::new(&our.node, ("main", "command_center", "appattacc.os")),
+                    params: "".to_string(),
+                }
+            },
+            {
+                Capability {
+                    issuer: Address::new(&our.node, ("tg", "command_center", "appattacc.os")),
+                    params: "".to_string(),
+                }
+            },
+            {
+                Capability {
+                    issuer: Address::new(
+                        &our.node,
+                        ("speech_to_text", "command_center", "appattacc.os"),
+                    ),
+                    params: "".to_string(),
+                }
+            },
+        ],
+    };
+
+    GrantCapabilities {
+        target: ProcessId::new(Some("main"), "command_center", "appattacc.os"),
+        capabilities: vec![Capability {
+            issuer: chatbot_addr.clone(),
+            params: "".to_string(),
+        }],
+    };
+    GrantCapabilities {
+        target: ProcessId::new(Some("tg"), "command_center", "appattacc.os"),
+        capabilities: vec![Capability {
+            issuer: chatbot_addr.clone(),
+            params: "".to_string(),
+        }],
+    };
+
+    GrantCapabilities {
+        target: ProcessId::new(Some("speech_to_text"), "command_center", "appattacc.os"),
+        capabilities: vec![Capability {
+            issuer: chatbot_addr.clone(),
+            params: "".to_string(),
+        }],
+    };
+    GrantCapabilities {
+        target: ProcessId::new(Some("openai"), "command_center", "appattacc.os"),
+        capabilities: vec![Capability {
+            issuer: chatbot_addr.clone(),
+            params: "".to_string(),
+        }],
+    };
+
     // spawn ai chatbot
     // let Ok(chatbot_addr) = spawners::spawn_pkg(&our, "ai_chatbot_demo.wasm") else {
     //     panic!("Failed to spawn ai chatbot");
