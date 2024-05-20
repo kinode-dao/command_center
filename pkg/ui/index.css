@@ -1034,6 +1034,10 @@ button:disabled {
     border-top: none;
 }
 
+.tooltiptext a {
+    pointer-events: auto;
+}
+
 input[type="text"] {
     min-width: 300px;
     align-self: stretch;
