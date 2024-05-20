@@ -27,6 +27,7 @@ fn handle_http_message(
     state: &mut Option<State>,
     pkgs: &HashMap<Pkg, Address>,
 ) -> anyhow::Result<()> {
+    println!("handle http message");
     match message {
         Message::Request { ref body, .. } => handle_http_request(our, state, body, pkgs),
         Message::Response { .. } => Ok(()),
@@ -39,6 +40,7 @@ fn handle_http_request(
     body: &[u8],
     pkgs: &HashMap<Pkg, Address>,
 ) -> anyhow::Result<()> {
+    println!("handle http request");
     let http_request = http::HttpServerRequest::from_bytes(body)?
         .request()
         .ok_or_else(|| anyhow::anyhow!("Failed to parse http request"))?;
@@ -46,7 +48,6 @@ fn handle_http_request(
     let bytes = get_blob()
         .ok_or_else(|| anyhow::anyhow!("Failed to get blob"))?
         .bytes;
-
     match path.as_str() {
         "/status" => fetch_status(),
         "/submit_config" => submit_config(our, &bytes, state, pkgs),
@@ -90,6 +91,7 @@ fn submit_config(
 
     if let Some(ref mut state) = state {
         for (pkg, addr) in pkgs.iter() {
+            println!("submit_config: matching pkg: {:?}", pkg);
             match pkg {
                 Pkg::LLM => {
                     if let Some(openai_key) = &state.config.openai_key {
@@ -161,11 +163,12 @@ fn handle_message(
     state: &mut Option<State>,
     pkgs: &HashMap<Pkg, Address>,
 ) -> anyhow::Result<()> {
+    println!("handle message");
     let message = await_message()?;
     if message.source().node != our.node {
         return Ok(());
     }
-
+    println!("message source: {:?}", message.source());
     match message.source().process.to_string().as_str() {
         "http_server:distro:sys" | "http_client:distro:sys" => {
             handle_http_message(&our, &message, state, pkgs)
@@ -205,78 +208,10 @@ fn init(our: Address) {
 
     let chatbot_addr = Address::new(&our.node, ("ai_chatbot_demo", "command_center", "appattacc.os"));
 
-    // spawn packages (stt, groq, tg)
+    println!("spawning pkgs from here");
     let Ok(pkgs) = spawners::spawn_pkgs(&our) else {
         panic!("Failed to spawn pkgs");
     };
-
-    GrantCapabilities {
-        target: chatbot_addr.process.clone(),
-        capabilities: vec![
-            {
-                Capability {
-                    issuer: Address::new(&our.node, ("http:server", "distro", "sys")),
-                    params: "".to_string(),
-                }
-            },
-            {
-                Capability {
-                    issuer: Address::new(&our.node, ("main", "command_center", "appattacc.os")),
-                    params: "".to_string(),
-                }
-            },
-            {
-                Capability {
-                    issuer: Address::new(&our.node, ("tg", "command_center", "appattacc.os")),
-                    params: "".to_string(),
-                }
-            },
-            {
-                Capability {
-                    issuer: Address::new(
-                        &our.node,
-                        ("speech_to_text", "command_center", "appattacc.os"),
-                    ),
-                    params: "".to_string(),
-                }
-            },
-        ],
-    };
-
-    GrantCapabilities {
-        target: ProcessId::new(Some("main"), "command_center", "appattacc.os"),
-        capabilities: vec![Capability {
-            issuer: chatbot_addr.clone(),
-            params: "".to_string(),
-        }],
-    };
-    GrantCapabilities {
-        target: ProcessId::new(Some("tg"), "command_center", "appattacc.os"),
-        capabilities: vec![Capability {
-            issuer: chatbot_addr.clone(),
-            params: "".to_string(),
-        }],
-    };
-
-    GrantCapabilities {
-        target: ProcessId::new(Some("speech_to_text"), "command_center", "appattacc.os"),
-        capabilities: vec![Capability {
-            issuer: chatbot_addr.clone(),
-            params: "".to_string(),
-        }],
-    };
-    GrantCapabilities {
-        target: ProcessId::new(Some("openai"), "command_center", "appattacc.os"),
-        capabilities: vec![Capability {
-            issuer: chatbot_addr.clone(),
-            params: "".to_string(),
-        }],
-    };
-
-    // spawn ai chatbot
-    // let Ok(chatbot_addr) = spawners::spawn_pkg(&our, "ai_chatbot_demo.wasm") else {
-    //     panic!("Failed to spawn ai chatbot");
-    // };
 
     loop {
         match handle_message(&our, &mut state, &pkgs) {

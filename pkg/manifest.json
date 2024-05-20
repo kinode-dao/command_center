@@ -1,6 +1,24 @@
 [
     {
         "process_name": "main",
+        "process_wasm_path": "/command_center.wasm",
+        "on_exit": "Restart",
+        "request_networking": true,
+        "request_capabilities": [
+            "http_server:distro:sys",
+            "http_client:distro:sys",
+            "openai:llm:kinode",
+            "vfs:distro:sys",
+            "homepage:homepage:sys"
+        ],
+        "grant_capabilities": [
+            "http_server:distro:sys",
+            "http_client:distro:sys"
+        ],
+        "public": false
+    },
+    {
+        "process_name": "ai_chatbot_demo",
         "process_wasm_path": "/ai_chatbot_demo.wasm",
         "on_exit": "None",
         "request_networking": true,
@@ -16,24 +34,6 @@
             "tg:command_center:appattacc.os",
             "speech_to_text:command_center:appattacc.os",
             "openai:command_center:appattacc.os"
-        ],
-        "public": false
-    },
-    {
-        "process_name": "main",
-        "process_wasm_path": "/command_center.wasm",
-        "on_exit": "Restart",
-        "request_networking": true,
-        "request_capabilities": [
-            "http_server:distro:sys",
-            "http_client:distro:sys",
-            "openai:llm:kinode",
-            "vfs:distro:sys",
-            "homepage:homepage:sys"
-        ],
-        "grant_capabilities": [
-            "http_server:distro:sys",
-            "http_client:distro:sys"
         ],
         "public": false
     }
