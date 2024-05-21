@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use kinode_process_lib::{
-    await_message, call_init, get_blob, http, println, Address, Message, Request,
+    await_message, call_init, get_blob, http, /*println, */Address, Message, Request,
     kernel_types::Capability, kernel_types::KernelCommand::GrantCapabilities, ProcessId
 };
 use llm_interface::openai::*;

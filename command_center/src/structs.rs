@@ -36,3 +36,7 @@ pub struct InitialConfig {
     pub groq_key: Option<String>,
 }
 
+pub struct TgData {
+    
+}
+
