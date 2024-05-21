@@ -2,94 +2,12 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Command Center</title>
-    <link rel="stylesheet" href="index.css">
-    <script>
-        async function submitKey() {
-            const telegramKey = document.getElementById('telegramKey').value || null;
-            const openaiKey = document.getElementById('openaiKey').value || null;
-            const groqKey = document.getElementById('groqKey').value || null;
-            const bodyData = {
-                telegram_key: telegramKey,
-                openai_key: openaiKey,
-                groq_key: groqKey
-            };
-            const response = await fetch('/main:command_center:appattacc.os/submit_config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(bodyData),
-            });
-            try {
-                const data = await response.json();
-                if (data.message === 'success') {
-                    document.getElementById('result').textContent = 'Success!';
-                } else {
-                    document.getElementById('result').textContent = 'Failed to submit key.';
-                }
-            } catch (error) {
-                console.error(error);
-                document.getElementById('result').textContent = 'Failed to submit key.';
-            }
-        }
-
-        async function fetchStatus() {
-            const response = await fetch('/main:command_center:appattacc.os/status', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            try {
-                const data = await response.json();
-                if (data.telegram_key) {
-                    document.getElementById('telegramKey').value = data.telegram_key;
-                }
-                if (data.openai_key) {
-                    document.getElementById('openaiKey').value = data.openai_key;
-                }
-                if (data.groq_key) {
-                    document.getElementById('groqKey').value = data.groq_key;
-                }
-            } catch (error) {
-                console.error(error);
-                document.getElementById('result').textContent = 'Failed to fetch status.';
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.tooltip').forEach(tooltip => {
-                console.log(tooltip)
-                tooltip.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const tooltipText = tooltip.querySelector('.tooltiptext');
-                    console.log(tooltipText)
-                    tooltipText.classList.toggle('invisible');
-                });
-            });
-
-            // document.getElementById("defaultOpen").click();
-
-            fetchStatus()
-        });
-
-        function openTab(evt, tabName) {
-            var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tabcontent");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-            }
-            tablinks = document.getElementsByClassName("tablinks");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-            document.getElementById(tabName).style.display = "block";
-            evt.currentTarget.className += " active";
-        }
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Center</title>
+  <link rel="stylesheet" href="index.css">
+  <script type="module" src="/main.js">
+  </script>
 </head>
 
 <!-- <div class="tab">
@@ -99,63 +17,66 @@
 
 
 <body class="h-screen w-screen overflow-hidden flex-col-center items-center justify-center gap-2">
-    <!-- <div id="Config" class="tabcontent"> -->
-    <h1 class="mb-2">Telegram Bot Configuration</h1>
-    <div class="flex-center gap-2">
-        <input type="text" id="telegramKey" placeholder="Enter Telegram Bot API Key">
-        <button type="button" class="icon relative tooltip">
-            <span class="text-lg font-bold">?</span>
-            <span class="tooltiptext absolute invisible pointer-events-none">
-                <ul>
-                    <li>Open Telegram and search for "@BotFather".</li>
-                    <li>Start a conversation and type `/newbot`.</li>
-                    <li>Follow prompts to create a new bot.</li>
-                    <li>Securely copy the HTTP API access token displayed.</li>
-                    <li>Paste the token (API key) here.</li>
-                </ul>
-            </span>
-        </button>
-    </div>
-    <div class="flex-center gap-2">
-        <input type="text" id="openaiKey" placeholder="Enter OpenAI API Key (Optional)">
-        <button type="button" class="icon relative tooltip">
-            <span class="text-lg font-bold">?</span>
-            <span class="tooltiptext absolute invisible pointer-events-none">
-                <ul>
-                    <li>Go to <a href="https://platform.openai.com" target="_blank">OpenAI Platform</a> and sign in /
-                        sign up.</li>
-                    <li>Go to <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI API Keys</a>, and if
-                        prompted, verify your phone number.</li>
-                    <li>Go to <a href="https://platform.openai.com/settings/organization/billing/overview"
-                            target="_blank">OpenAI Billing</a> page, and see if you have any credits - if not, add to
-                        credits balance.</li>
-                    <li>Go back to <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI API Keys</a>,
-                        and click "Create new secret key" to generate a key.</li>
-                    <li>Click through until an API key is displayed.</li>
-                    <li>Securely copy the API key.</li>
-                    <li>Paste the API key here.</li>
-                </ul>
-            </span>
-        </button>
-    </div>
-    <div class="flex-center gap-2">
-        <input type="text" id="groqKey" placeholder="Enter Groq API Key (Optional)">
-        <button type="button" class="icon relative tooltip">
-            <span class="text-lg font-bold">?</span>
-            <span class="tooltiptext absolute invisible pointer-events-none">
-                <ul>
-                    <li>Go to <a href="https://console.groq.com/keys">Groq API Keys</a> and sign in / sign up.</li>
-                    <li>Click "Create API Key" to generate a key.</li>
-                    <li>Click through until an API key is displayed.</li>
-                    <li>Give the key a name.</li>
-                    <li>Securely copy the API key.</li>
-                    <li>Paste the API key here.</li>
-                </ul>
-        </button>
-    </div>
-    <button onclick="submitKey()">Submit</button>
-    <p id="result"></p>
-    <!-- </div> -->
+  <!-- <div id="Config" class="tabcontent"> -->
+  <h1 class="mb-2">Telegram Bot Configuration</h1>
+  <div class="flex-center gap-2">
+    <input type="text" id="telegramKey" placeholder="Enter Telegram Bot API Key">
+    <button type="button" class="icon relative tooltip">
+      <span class="text-lg font-bold">?</span>
+      <span class="tooltiptext absolute invisible pointer-events-none">
+        <ul>
+          <li>- Open Telegram and search for "@BotFather".</li>
+          <li>- Start a conversation and type `/newbot`.</li>
+          <li>- Follow prompts to create a new bot.</li>
+          <li>- Securely copy the HTTP API access token displayed.</li>
+          <li>- Paste the token (API key) here.</li>
+        </ul>
+      </span>
+    </button>
+  </div>
+  <div class="flex-center gap-2">
+    <input type="text" id="openaiKey" placeholder="Enter OpenAI API Key">
+    <button type="button" class="icon relative tooltip">
+      <span class="text-lg font-bold">?</span>
+      <span class="tooltiptext absolute invisible pointer-events-none">
+        <ul>
+          <li>- Go to <a href="https://platform.openai.com" target="_blank">OpenAI Platform</a> and sign in /
+            sign up.</li>
+          <li>- Go to <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI API Keys</a>, and if
+            prompted, verify your phone number.</li>
+          <li>- Go to <a href="https://platform.openai.com/settings/organization/billing/overview"
+              target="_blank">OpenAI
+              Billing</a> page, and see if you have any credits - if not, add to
+            credits balance.</li>
+          <li>- Go back to <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI API Keys</a>,
+            and click "Create new secret key" to generate a key.</li>
+          <li>- Click through until an API key is displayed.</li>
+          <li>- Securely copy the API key.</li>
+          <li>- Paste the API key here.</li>
+        </ul>
+      </span>
+    </button>
+  </div>
+  <div class="flex-center gap-2">
+    <input type="text" id="groqKey" placeholder="Enter Groq API Key">
+    <button type="button" class="icon relative tooltip">
+      <span class="text-lg font-bold">?</span>
+      <span class="tooltiptext absolute invisible pointer-events-none">
+        <ul>
+          <li>- Go to <a href="https://console.groq.com/keys">Groq API Keys</a> and sign in / sign up.</li>
+          <li>- Click "Create API Key" to generate a key.</li>
+          <li>- Click through until an API key is displayed.</li>
+          <li>- Give the key a name.</li>
+          <li>- Securely copy the API key.</li>
+          <li>- Paste the API key here.</li>
+        </ul>
+    </button>
+  </div>
+  <button onclick="submitKey()">Submit</button>
+  <p id="result"></p>
+  <!-- </div> -->
 </body>
+<script type="module" src="/tooltip.js">
+</script>
 
 </html>

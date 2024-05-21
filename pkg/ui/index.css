@@ -1042,3 +1042,73 @@ input[type="text"] {
     min-width: 300px;
     align-self: stretch;
 }
+
+.tooltip {
+    position: relative;
+    /* Ensure the parent is positioned relatively */
+    display: inline-block;
+    /* Keeps the tooltip with the button */
+}
+
+.tooltiptext {
+    visibility: hidden;
+    /* Start with tooltip hidden */
+    width: auto;
+    min-width: 300px;
+
+    /* Adjust width as needed */
+    background-color: rgba(255, 0, 0, 0);
+    /* Tooltip background */
+    color: rgb(255 245 217);
+    /* Text color */
+    text-align: left;
+    border-radius: 6px;
+    border: 2px solid rgb(255 245 217);
+    padding: 5px 10px;
+    /* Padding inside the tooltip */
+
+    /* Positioning */
+    position: absolute;
+    /* padding around the text */
+    z-index: 1;
+    /* Make sure it sits on top of other content */
+    left: 110%;
+    /* Adjust this value to move further right */
+    top: 50%;
+    /* Center vertically relative to the button */
+    transform: translateY(-50%);
+    /* Center vertically */
+
+    font-size: 16px;
+    /* Larger font size */
+
+    margin-left: 10px;
+
+}
+
+.tooltiptext.visible {
+    visibility: visible;
+}
+
+.tooltiptext.invisible {
+    visibility: hidden;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    /* Show tooltip on hover */
+}
+
+a {
+    color: #ff4d2d;
+    text-decoration: none;
+    /* Optional: removes underline */
+}
+
+a:hover,
+a:focus {
+    color: #ffe016;
+    /* Darker blue when hovered or focused */
+    text-decoration: underline;
+    /* Adds underline on hover/focus */
+}
