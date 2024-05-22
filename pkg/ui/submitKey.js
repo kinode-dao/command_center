@@ -1,3 +1,5 @@
+import { fetchStatus } from "./main.js";
+
 window.submitKey = submitKey;  // Make it available globally
 
 export async function submitKey() {
@@ -20,6 +22,7 @@ export async function submitKey() {
         const data = await response.json();
         if (data.message === 'success') {
             document.getElementById('result').textContent = 'Success!';
+            fetchStatus();
         } else {
             document.getElementById('result').textContent = 'Failed to submit key.';
         }

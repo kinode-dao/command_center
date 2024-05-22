@@ -30,7 +30,7 @@ fn handle_message(
         return Ok(());
     }
     println!("chatbot: message from {:?}", message.source());
-    println!("print this");
+    println!("{:?}", message);
     handle_telegram_message(&message)
 }
 
@@ -86,6 +86,7 @@ fn get_groq_answer(text: &str) -> anyhow::Result<String> {
         println!("chatbot: failed to parse LLM response");
         return Err(anyhow::anyhow!("Failed to parse LLM response"));
     };
+    println!("{:?}", chat.choices[0].message.content.clone());
     Ok(chat.choices[0].message.content.clone())
 }
 
@@ -131,6 +132,7 @@ fn get_last_tg_msg(message: &Message) -> Option<TgMessage> {
             return None;
         }
     };
+    println!("{:?}", &msg);
     Some(msg.clone())
 }
 
@@ -139,7 +141,7 @@ pub fn subscribe() -> anyhow::Result<()> {
     let subscribe_request = serde_json::to_vec(&TgRequest::Subscribe)?;
     let result = Request::to(TG_ADDRESS)
         .body(subscribe_request)
-        .send_and_await_response(3)??;
+        .send_and_await_response(15)??;
     let TgResponse::Ok = serde_json::from_slice::<TgResponse>(result.body())? else {
         println!("chatbot: failed to parse subscription response");
         return Err(anyhow::anyhow!("Failed to parse subscription response"));

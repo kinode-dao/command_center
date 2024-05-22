@@ -2,6 +2,7 @@
 initializeTooltips();
 fetchStatus();
 
+
 export async function fetchStatus() {
   const response = await fetch('/main:command_center:appattacc.os/status', {
     method: 'POST',
@@ -19,6 +20,14 @@ export async function fetchStatus() {
     }
     if (data.groq_key) {
       document.getElementById('groqKey').value = data.groq_key;
+    }
+    if (data.groq_key && data.openai_key && data.telegram_key) {
+      document.getElementById('result').innerHTML =
+        `<strong>Congrats!</strong> You have submitted all 3 API keys.<br>` +
+        `Go to your Telegram <a href="https://t.me/your_new_bot" target="_blank">` +
+        `@botfather</a> chat, and click on the link which he provided (e.g. "t.me/your_new_bot").<br>` +
+        `You just created a bot! Try sending it a voice or a text message and see what happens!`;
+
     }
   } catch (error) {
     console.error(error);

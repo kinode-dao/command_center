@@ -35,8 +35,3 @@ pub struct InitialConfig {
     pub openai_key: Option<String>,
     pub groq_key: Option<String>,
 }
-
-pub struct TgData {
-    
-}
-

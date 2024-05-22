@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use kinode_process_lib::{
-    await_message, call_init, get_blob, http, /*println, */Address, Message, Request,
-    kernel_types::Capability, kernel_types::KernelCommand::GrantCapabilities, ProcessId
+    await_message, call_init, get_blob, http, /*println, */Address, Message, Request
 };
 use llm_interface::openai::*;
 use stt_interface::*;
@@ -45,11 +44,15 @@ fn handle_http_request(
         .request()
         .ok_or_else(|| anyhow::anyhow!("Failed to parse http request"))?;
     let path = http_request.path()?;
+    println!("path: {:?}", path);
     let bytes = get_blob()
         .ok_or_else(|| anyhow::anyhow!("Failed to get blob"))?
         .bytes;
     match path.as_str() {
-        "/status" => fetch_status(),
+        "/status" => {
+            println!("fetching status");
+            fetch_status()
+        },
         "/submit_config" => submit_config(our, &bytes, state, pkgs),
         _ => Ok(()),
     }
@@ -206,12 +209,33 @@ fn init(our: Address) {
         .send()
         .unwrap();
 
-    let chatbot_addr = Address::new(&our.node, ("ai_chatbot_demo", "command_center", "appattacc.os"));
+    // println!("spawning pkgs from here");
+    // let Ok(pkgs) = spawners::spawn_pkgs(&our) else {
+    //     panic!("Failed to spawn pkgs");
+    // };
+    let mut pkgs = HashMap::new();
+    pkgs.insert(Pkg::LLM, Address::new(&our.node, ("openai", "command_center", "appattacc.os")));
+    pkgs.insert(Pkg::STT, Address::new(&our.node, ("speech_to_text", "command_center", "appattacc.os")));
+    pkgs.insert(Pkg::Telegram, Address::new(&our.node, ("tg", "command_center", "appattacc.os")));
 
-    println!("spawning pkgs from here");
-    let Ok(pkgs) = spawners::spawn_pkgs(&our) else {
-        panic!("Failed to spawn pkgs");
-    };
+    // register api key (necessary after every install)
+    // used from submit_config (can make a helper fn)
+    match &state.clone() {
+        Some(state) => {
+            if let Some(telegram_key) = &state.config.telegram_key {
+            let init = TgInitialize {
+                token: telegram_key.clone(),
+                params: None,
+            };
+            let req = serde_json::to_vec(&TgRequest::RegisterApiKey(init));
+            let _ = Request::new()
+                .target(pkgs.get(&Pkg::Telegram).unwrap())
+                .body(req.unwrap())
+                .send_and_await_response(5);
+            }
+        }
+        None => {}
+    }
 
     loop {
         match handle_message(&our, &mut state, &pkgs) {

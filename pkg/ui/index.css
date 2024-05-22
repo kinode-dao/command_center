@@ -1112,3 +1112,25 @@ a:focus {
     text-decoration: underline;
     /* Adds underline on hover/focus */
 }
+
+.parent-container {
+    position: relative;
+    /* Establishes a positioning context */
+    /* Set dimensions as needed, or ensure it has dimensions from its content */
+}
+
+.right-aligned-div {
+    position: absolute;
+    right: 100;
+    /* Aligns the div to the right edge of its positioned ancestor */
+    top: 0;
+    /* You can adjust this as needed */
+    /* Set width and height as necessary */
+}
+
+.container {
+    display: grid;
+    /* Establishes a grid container */
+    grid-template-columns: auto auto;
+    /* Defines two columns */
+}
