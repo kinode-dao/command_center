@@ -218,8 +218,7 @@ fn init(our: Address) {
     pkgs.insert(Pkg::STT, Address::new(&our.node, ("speech_to_text", "command_center", "appattacc.os")));
     pkgs.insert(Pkg::Telegram, Address::new(&our.node, ("tg", "command_center", "appattacc.os")));
 
-    // register api key (necessary after every install)
-    // used from submit_config (can make a helper fn)
+    // calling RegisterApiKey because it calls getUpdates (necessary every time a process is restarted)
     match &state.clone() {
         Some(state) => {
             if let Some(telegram_key) = &state.config.telegram_key {
