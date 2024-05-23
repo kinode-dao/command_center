@@ -4,11 +4,11 @@
     "image": "https://i.imgur.com/ZwDldAV.jpeg",
     "properties": {
         "package_name": "command_center",
-        "current_version": "0.1.0",
+        "current_version": "0.1.1",
         "publisher": "appattacc.os",
         "mirrors": ["appattacc.os"],
         "code_hashes": {
-            "0.1.0": "0efa07dfecb068d4255b16b733217b77424a8524bd88c3664f50d66324bab1a3"
+            "0.1.1": "caae6fe02e5318d867eef2d2e1a0d124ac8ed314646d73cb2526bbbbf154f960"
         }
     },
     "external_url": "https://github.com/kinode-dao/command_center",
