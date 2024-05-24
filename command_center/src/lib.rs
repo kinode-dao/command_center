@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use kinode_process_lib::{
-    await_message, call_init, get_blob, http, /*println, */Address, Message, Request,
-    http::bind_ws_path
+    await_message, call_init, get_blob, http, Address, Message, Request, /*, println */
 };
 use llm_interface::openai::*;
 use stt_interface::*;
@@ -12,9 +11,6 @@ mod structs;
 use structs::*;
 
 mod tg_api;
-
-mod spawners;
-use spawners::*;
 
 wit_bindgen::generate!({
     path: "wit",

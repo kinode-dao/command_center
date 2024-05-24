@@ -1,6 +1,13 @@
 use serde::{Deserialize, Serialize};
 use kinode_process_lib::{get_state, set_state, Address};
 
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Serialize, Deserialize)]
+pub enum Pkg {
+    LLM,
+    STT,
+    Telegram,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct State {
     pub our: Address,
