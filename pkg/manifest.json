@@ -9,14 +9,16 @@
             "http_client:distro:sys",
             "openai:llm:kinode",
             "vfs:distro:sys",
-            "homepage:homepage:sys"
+            "homepage:homepage:sys",
+            "sqlite:distro:sys"
         ],
         "grant_capabilities": [
             "http_server:distro:sys",
             "http_client:distro:sys",
             "openai:command_center:appattacc.os",
             "speech_to_text:command_center:appattacc.os",
-            "tg:command_center:appattacc.os"
+            "tg:command_center:appattacc.os",
+            "sqlite:distro:sys"
         ],
         "public": false
     },
@@ -28,12 +30,14 @@
         "request_capabilities": [
             "http_server:distro:sys",
             "http_client:distro:sys",
-            "net:distro:sys"
+            "net:distro:sys",
+            "sqlite:distro:sys"
         ],
         "grant_capabilities": [
             "main:command_center:appattacc.os",
             "http_server:distro:sys",
-            "http_client:distro:sys"
+            "http_client:distro:sys",
+            "sqlite:distro:sys"
         ],
         "public": false
     },

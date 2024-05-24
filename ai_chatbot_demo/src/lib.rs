@@ -30,7 +30,7 @@ fn handle_message(
         return Ok(());
     }
     println!("chatbot: message from {:?}", message.source());
-    println!("{:?}", message);
+    println!("chatbot: {:#?}", message);
     handle_telegram_message(&message)
 }
 
@@ -41,19 +41,18 @@ pub fn handle_telegram_message(message: &Message) -> anyhow::Result<()> {
     };
     let id = msg.chat.id;
     let mut text = msg.text.clone().unwrap_or_default();
-    println!("chatbot: text: {:?}", text);
     if let Some(voice) = msg.voice.clone() {
         let audio = get_file(&voice.file_id)?;
         text += &get_text(audio)?;
+        println!("chatbot: text: {}", &text);
     }
     let answer = get_groq_answer(&text)?;
-    println!("chatbot: answer: {:?}", answer);
     let _message = send_bot_message(&answer, id);
     Ok(())
 }
 
 fn send_bot_message(text: &str, id: i64) -> anyhow::Result<TgMessage> {
-    println!("chatbot: send bot message");
+    println!("chatbot: send bot message: {}", text);
     let params = SendMessageParams::builder()
         .chat_id(ChatId::Integer(id)) 
         .text(text)

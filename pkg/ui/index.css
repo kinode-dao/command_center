@@ -1030,7 +1030,7 @@ button:disabled {
 .tabcontent {
     display: none;
     padding: 6px 12px;
-    border: 1px solid #ccc;
+    /* border: 1px solid #ccc; */
     border-top: none;
 }
 
@@ -1133,4 +1133,78 @@ a:focus {
     /* Establishes a grid container */
     grid-template-columns: auto auto;
     /* Defines two columns */
+}
+
+
+.tablinks {
+    background-color: #f3542240;
+    /* Green background */
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+    /* Rounded corners */
+    transition: background-color 0.3s;
+    /* Smooth transition for hover effect */
+}
+
+.tablinks:hover {
+    background-color: #f3542240;
+}
+
+/* CSS classes for each column */
+.table-chat-id {
+    width: 50px;
+}
+
+.table-date {
+    width: 50px;
+}
+
+.table-message-id {
+    width: 50px;
+}
+
+.table-text {
+    width: 300px;
+}
+
+.table-username {
+    width: 100px;
+}
+
+/* General table styling */
+table {
+    width: 100%;
+    /* Full width of the container */
+    table-layout: fixed;
+    /* Enable fixed table layout */
+    border-collapse: collapse;
+    /* Optional: removes space between borders */
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    /* Optional: adds border to cells */
+    text-align: left;
+    /* Align text to the left */
+    padding: 8px;
+    /* Padding inside cells */
+}
+
+#messageContainer {
+    max-width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+
+    /* Maximum width of the table */
+    overflow-x: auto;
+    /* Allows horizontal scrolling */
 }

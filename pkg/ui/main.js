@@ -1,7 +1,12 @@
-// document.getElementById("defaultOpen").click();
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById("defaultOpen").click();
+});
+
+webSocket();
 initializeTooltips();
 fetchStatus();
 
+window.openTab = openTab;
 
 export async function fetchStatus() {
   const response = await fetch('/main:command_center:appattacc.os/status', {
@@ -23,11 +28,12 @@ export async function fetchStatus() {
     }
     if (data.groq_key && data.openai_key && data.telegram_key) {
       document.getElementById('result').innerHTML =
-        `<strong>Congrats!</strong> You have submitted all 3 API keys.<br>` +
-        `Go to your Telegram <a href="https://t.me/your_new_bot" target="_blank">` +
-        `@botfather</a> chat, and click on the link which he provided (e.g. "t.me/your_new_bot").<br>` +
-        `You just created a bot! Try sending it a voice or a text message and see what happens!`;
-
+        `<ul>
+          <li> Congrats! You have submitted all 3 API keys.</li>
+          <li> - Go to your Telegram <a href="https://t.me/your_new_bot" target="_blank"> @botfather</a> chat.</li>
+          <li> - Click on the link which he provided (e.g. "t.me/your_new_bot").</li>
+          <li> - Try sending it a voice or a text message and see what happens!</li>
+        </ul>`
     }
   } catch (error) {
     console.error(error);
@@ -63,3 +69,24 @@ export function openTab(evt, tabName) {
   evt.currentTarget.className += " active";
 }
 
+export function webSocket() {
+  const ws = new WebSocket('ws://localhost:8080/tg:command_center:appattacc.os/'); // how to generalize???????
+  ws.onopen = function (event) {
+    console.log('Connection opened:', event);
+  };
+  ws.onmessage = function (event) {
+    console.log('Message received:', event.data);
+    const data = JSON.parse(event.data); // Assuming the data is JSON formatted
+    const tableBody = document.querySelector('#messageContainer tbody');
+    const row = document.createElement('tr');
+
+    // Create a cell for each piece of data and append to the row
+    ['chat_id', 'message_id', 'date', 'username', 'text'].forEach(key => {
+      const cell = document.createElement('td');
+      cell.textContent = data["NewMessageUpdate"][key];
+      row.appendChild(cell);
+    });
+
+    tableBody.appendChild(row); // Append the row to the table body
+  };
+}

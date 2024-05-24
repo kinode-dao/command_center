@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use kinode_process_lib::{
-    await_message, call_init, get_blob, http, /*println, */Address, Message, Request
+    await_message, call_init, get_blob, http, /*println, */Address, Message, Request,
+    http::bind_ws_path
 };
 use llm_interface::openai::*;
 use stt_interface::*;
@@ -190,6 +191,7 @@ fn init(our: Address) {
         false,
         vec!["/", "/submit_config", "/status"],
     );
+
     let mut state = State::fetch();
 
     // add ourselves to the homepage
@@ -209,16 +211,12 @@ fn init(our: Address) {
         .send()
         .unwrap();
 
-    // println!("spawning pkgs from here");
-    // let Ok(pkgs) = spawners::spawn_pkgs(&our) else {
-    //     panic!("Failed to spawn pkgs");
-    // };
+    // calling RegisterApiKey because it calls getUpdates (necessary every time a process is restarted)
     let mut pkgs = HashMap::new();
     pkgs.insert(Pkg::LLM, Address::new(&our.node, ("openai", "command_center", "appattacc.os")));
     pkgs.insert(Pkg::STT, Address::new(&our.node, ("speech_to_text", "command_center", "appattacc.os")));
     pkgs.insert(Pkg::Telegram, Address::new(&our.node, ("tg", "command_center", "appattacc.os")));
 
-    // calling RegisterApiKey because it calls getUpdates (necessary every time a process is restarted)
     match &state.clone() {
         Some(state) => {
             if let Some(telegram_key) = &state.config.telegram_key {
