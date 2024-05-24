@@ -71,9 +71,10 @@ export function openTab(evt, tabName) {
 }
 
 export function webSocket() {
-  const ws = new WebSocket('ws://localhost:8080/tg:command_center:appattacc.os/'); // how to generalize???????
+  const ws = new WebSocket('ws://' + window.location.host + '/tg:command_center:appattacc.os/');
+
   ws.onopen = function (event) {
-    console.log('Connection opened:', event);
+    console.log('Connection opened on ' + window.location.host + ':', event);
   };
   ws.onmessage = function (event) {
     console.log('Message received:', event.data);
@@ -92,9 +93,6 @@ export function webSocket() {
         // Format the date into a human-readable string
         const dateString = date.toLocaleDateString("en-US"); // Outputs in MM/DD/YYYY format for US locale
         const timeString = date.toLocaleTimeString("en-US"); // Outputs time in HH:MM:SS AM/PM format for US locale
-
-        console.log("Date:", dateString);
-        console.log("Time:", timeString);
 
         cell.textContent = dateString + " " + timeString;
       } else {
