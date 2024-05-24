@@ -33,6 +33,7 @@ export async function fetchStatus() {
           <li> - Go to your Telegram <a href="https://t.me/your_new_bot" target="_blank"> @botfather</a> chat.</li>
           <li> - Click on the link which he provided (e.g. "t.me/your_new_bot").</li>
           <li> - Try sending it a voice or a text message and see what happens!</li>
+          <li> - Bonus: take a look at Data Center while messaging.</li>
         </ul>`
     }
   } catch (error) {
@@ -83,7 +84,22 @@ export function webSocket() {
     // Create a cell for each piece of data and append to the row
     ['chat_id', 'message_id', 'date', 'username', 'text'].forEach(key => {
       const cell = document.createElement('td');
-      cell.textContent = data["NewMessageUpdate"][key];
+      if (key == 'date') {
+        // Create a new Date object using the timestamp multiplied by 1000 (to convert seconds to milliseconds)
+        const timestamp = data["NewMessageUpdate"][key];
+        const date = new Date(timestamp * 1000);
+
+        // Format the date into a human-readable string
+        const dateString = date.toLocaleDateString("en-US"); // Outputs in MM/DD/YYYY format for US locale
+        const timeString = date.toLocaleTimeString("en-US"); // Outputs time in HH:MM:SS AM/PM format for US locale
+
+        console.log("Date:", dateString);
+        console.log("Time:", timeString);
+
+        cell.textContent = dateString + " " + timeString;
+      } else {
+        cell.textContent = data["NewMessageUpdate"][key];
+      }
       row.appendChild(cell);
     });
 
