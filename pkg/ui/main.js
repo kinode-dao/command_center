@@ -71,7 +71,7 @@ export function openTab(evt, tabName) {
 }
 
 export function webSocket() {
-  const ws = new WebSocket('ws://' + window.location.host + '/tg:command_center:appattacc.os/');
+  const ws = new WebSocket('wss://' + window.location.host + '/tg:command_center:appattacc.os/');
 
   ws.onopen = function (event) {
     console.log('Connection opened on ' + window.location.host + ':', event);
