@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
+use kinode_process_lib::vfs::{create_drive, DirEntry, FileType};
 use kinode_process_lib::{
-    await_message, call_init, get_blob, http, Address, Message, Request, /*, println */
+    await_message, call_init, get_blob, http, println, Address, Message, Request,
 };
+
 use llm_interface::openai::*;
 use stt_interface::*;
 use telegram_interface::*;
@@ -11,6 +13,8 @@ mod structs;
 use structs::*;
 
 mod tg_api;
+
+mod files;
 
 wit_bindgen::generate!({
     path: "wit",
@@ -49,7 +53,7 @@ fn handle_http_request(
         "/status" => {
             println!("fetching status");
             fetch_status()
-        },
+        }
         "/submit_config" => submit_config(our, &bytes, state, pkgs),
         _ => Ok(()),
     }
@@ -209,27 +213,47 @@ fn init(our: Address) {
 
     // calling RegisterApiKey because it calls getUpdates (necessary every time a process is restarted)
     let mut pkgs = HashMap::new();
-    pkgs.insert(Pkg::LLM, Address::new(&our.node, ("openai", "command_center", "appattacc.os")));
-    pkgs.insert(Pkg::STT, Address::new(&our.node, ("speech_to_text", "command_center", "appattacc.os")));
-    pkgs.insert(Pkg::Telegram, Address::new(&our.node, ("tg", "command_center", "appattacc.os")));
+    pkgs.insert(
+        Pkg::LLM,
+        Address::new(&our.node, ("openai", "command_center", "appattacc.os")),
+    );
+    pkgs.insert(
+        Pkg::STT,
+        Address::new(
+            &our.node,
+            ("speech_to_text", "command_center", "appattacc.os"),
+        ),
+    );
+    pkgs.insert(
+        Pkg::Telegram,
+        Address::new(&our.node, ("tg", "command_center", "appattacc.os")),
+    );
 
     match &state.clone() {
         Some(state) => {
             if let Some(telegram_key) = &state.config.telegram_key {
-            let init = TgInitialize {
-                token: telegram_key.clone(),
-                params: None,
-            };
-            let req = serde_json::to_vec(&TgRequest::RegisterApiKey(init));
-            let _ = Request::new()
-                .target(pkgs.get(&Pkg::Telegram).unwrap())
-                .body(req.unwrap())
-                .send_and_await_response(5);
+                let init = TgInitialize {
+                    token: telegram_key.clone(),
+                    params: None,
+                };
+                let req = serde_json::to_vec(&TgRequest::RegisterApiKey(init));
+                let _ = Request::new()
+                    .target(pkgs.get(&Pkg::Telegram).unwrap())
+                    .body(req.unwrap())
+                    .send_and_await_response(5);
             }
         }
         None => {}
     }
 
+    let drive_path = create_drive(our.package_id(), "files", Some(5)).unwrap();
+    println!("drive_path: {:?}", drive_path);
+    let dir_path = format!("{}/Obsidian Vault", &drive_path);
+    let dir_entry = DirEntry {
+        path: dir_path.clone(),
+        file_type: FileType::Directory,
+    };
+    let x = files::read_nested_dir(dir_entry);
     loop {
         match handle_message(&our, &mut state, &pkgs) {
             Ok(_) => {}

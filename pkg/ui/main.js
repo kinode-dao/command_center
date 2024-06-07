@@ -1,3 +1,5 @@
+import FlexSearch from "./node_modules/flexsearch/dist/flexsearch.bundle.module.min.js";
+
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById("defaultOpen").click();
 });
@@ -7,6 +9,34 @@ initializeTooltips();
 fetchStatus();
 
 window.openTab = openTab;
+const options = {
+  charset: "latin:extra",
+  preset: 'match',
+  tokenize: 'strict',
+  cache: false
+}
+const index = new FlexSearch.Index(options);
+const recipes = [
+  { id: 1, title: 'Orange cake' },
+  { id: 2, title: 'New York-Style Bacon Egg and Cheese Sandwich' },
+  { id: 3, title: 'Bacon Wrapped Cheese Stuffed Meatloaf' },
+  { id: 4, title: 'French Yogurt Cake' },
+  { id: 5, title: 'Gougeres (French Cheese Puffs)' },
+  { id: 6, title: 'Authentic Brazilian Cheese Bread (Pão de Queijo)' },
+  { id: 7, title: 'Camarão na Moranga (Brazilian Shrimp Stuffed Pumpkin)' },
+  { id: 8, title: 'Parmesan Cheese Muffins' },
+  { id: 9, title: 'Cookie Dough Stuffed Oreos' },
+]
+recipes.forEach((recipe) => {
+  index.add(recipe.id, recipe.title)
+})
+
+const ids = index.search('Yogurt', 5);
+console.log(ids);
+const result = recipes.filter((recipe) => ids.includes(recipe.id));
+console.log(result);
+
+// index vs doc?????
 
 export async function fetchStatus() {
   const response = await fetch('/main:command_center:appattacc.os/status', {
