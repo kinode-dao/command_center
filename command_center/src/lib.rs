@@ -86,6 +86,7 @@ fn fetch_notes() -> anyhow::Result<()> {
     };
 
     let notes = files::read_nested_dir(dir_entry)?;
+    println!("notes: {:?}", notes);
 
     let response_body = serde_json::to_string(&notes)?;
     http::send_response(

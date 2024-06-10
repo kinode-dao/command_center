@@ -3,18 +3,31 @@ use kinode_process_lib::vfs::{open_dir, open_file, DirEntry, FileType};
 use std::collections::HashMap;
 
 // read_file -> contents
-pub fn read_file(dir: DirEntry) -> anyhow::Result<Vec<u8>> {
-    // println!("fn read_file on: {:#?}", &dir);
+pub fn read_file(dir: DirEntry) -> anyhow::Result<String> {
+    if dir.path.ends_with(".DS_Store") {
+        return Err(anyhow::Error::msg("Skipping .DS_Store"));
+    }
+    println!("fn read_file on: {:#?}", &dir);
     let file = open_file(&dir.path, false, Some(5));
-    file?.read()
+    println!("contents");
+    let contents: Vec<u8> = file?.read()?;
+    let json = std::str::from_utf8(&contents).map(|s| s.to_string())?;
+    println!("json: {:#?}", &json);
+    Ok(json)
 }
 
 // read files -> map path contents
-pub fn read_files(dirs: Vec<DirEntry>) -> anyhow::Result<HashMap<String, Vec<u8>>> {
+pub fn read_files(dirs: Vec<DirEntry>) -> anyhow::Result<HashMap<String, String>> {
     // println!("fn read_files on: {:#?}", &dirs);
     let mut files = HashMap::new();
     for dir in dirs {
-        files.insert(dir.path.clone(), read_file(dir)?);
+        let content = read_file(DirEntry {
+            path: dir.path.to_string(),
+            file_type: dir.file_type,
+        });
+        if let Ok(content) = content {
+            files.insert(dir.path.to_string(), content);
+        }
     }
     Ok(files)
 }
@@ -30,7 +43,7 @@ pub fn read_dir(dir: DirEntry) -> anyhow::Result<Vec<DirEntry>> {
 }
 
 // read nested dir -> map path contents
-pub fn read_nested_dir(dir: DirEntry) -> anyhow::Result<HashMap<String, Vec<u8>>> {
+pub fn read_nested_dir(dir: DirEntry) -> anyhow::Result<HashMap<String, String>> {
     // println!("fn read_nested_dir on: {:#?}", &dir);
     //  read dir -> list of paths
     let entries = read_dir(dir)?;
@@ -39,7 +52,7 @@ pub fn read_nested_dir(dir: DirEntry) -> anyhow::Result<HashMap<String, Vec<u8>>
         .into_iter()
         .partition(|entry| entry.file_type == FileType::Directory);
 
-    let mut output: HashMap<String, Vec<u8>> = HashMap::new();
+    let mut output: HashMap<String, String> = HashMap::new();
     //  files -> read files -> map path contents
     output.extend(read_files(files)?);
 

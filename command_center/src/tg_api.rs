@@ -136,7 +136,6 @@ impl Api {
         method: &str,
         params: Option<T1>,
     ) -> Result<(), anyhow::Error> {
-
         let url = format!("{}/{method}", self.api_url);
         let url = url::Url::from_str(&url)?;
 

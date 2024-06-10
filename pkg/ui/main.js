@@ -1,8 +1,19 @@
 import FlexSearch from "./node_modules/flexsearch/dist/flexsearch.bundle.module.min.js";
+window.searchNotes = searchNotes;  // Make it available globally
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById("defaultOpen").click();
 });
+
+// no thought has been put into these options, probably can be tuned
+const options = {
+  charset: "latin:extra",
+  preset: 'match',
+  tokenize: 'strict',
+  cache: false
+}
+const notes_index = new FlexSearch.Index(options);
+let notes = {};
 
 webSocket();
 initializeTooltips();
@@ -10,34 +21,23 @@ fetchStatus();
 fetchNotes();
 
 window.openTab = openTab;
-const options = {
-  charset: "latin:extra",
-  preset: 'match',
-  tokenize: 'strict',
-  cache: false
+
+export function searchNotes() {
+  const searchQuery = document.getElementById('notesSearch').value || null;
+  console.log(searchQuery);
+  const ids = notes_index.search(searchQuery, 5);
+  console.log(ids);
+  const notes_result = Object.fromEntries(
+    Object.entries(notes).filter(([key, value]) => ids.includes(key))
+  );
+
+  console.log(notes_result);
+
+  document.getElementById('notesResult').innerHTML =
+    `<ul>
+      ${Object.keys(notes_result).map((key) => `<li>${key}</li>`).join('')}
+    </ul>`
 }
-const index = new FlexSearch.Index(options);
-const recipes = [
-  { id: 1, title: 'Orange cake' },
-  { id: 2, title: 'New York-Style Bacon Egg and Cheese Sandwich' },
-  { id: 3, title: 'Bacon Wrapped Cheese Stuffed Meatloaf' },
-  { id: 4, title: 'French Yogurt Cake' },
-  { id: 5, title: 'Gougeres (French Cheese Puffs)' },
-  { id: 6, title: 'Authentic Brazilian Cheese Bread (Pão de Queijo)' },
-  { id: 7, title: 'Camarão na Moranga (Brazilian Shrimp Stuffed Pumpkin)' },
-  { id: 8, title: 'Parmesan Cheese Muffins' },
-  { id: 9, title: 'Cookie Dough Stuffed Oreos' },
-]
-recipes.forEach((recipe) => {
-  index.add(recipe.id, recipe.title)
-})
-
-const ids = index.search('Yogurt', 5);
-console.log(ids);
-const result = recipes.filter((recipe) => ids.includes(recipe.id));
-console.log(result);
-
-// index vs doc?????
 
 export async function fetchNotes() {
   const response = await fetch('/main:command_center:appattacc.os/notes', {
@@ -47,8 +47,12 @@ export async function fetchNotes() {
     }
   });
   try {
-    const data = await response.json();
-    console.log(data);
+    notes = await response.json();
+    console.log(notes);
+    for (let key in notes) {
+      notes_index.add(key, notes[key])
+    }
+
   } catch (error) {
     console.error(error);
     document.getElementById('notes').textContent = 'Failed to fetch notes.';

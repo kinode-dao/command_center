@@ -17,6 +17,7 @@
 <div class="tab">
   <button class="tablinks" onclick="openTab(event, 'Config')" id="defaultOpen">Config </button>
   <button class="tablinks" onclick="openTab(event, 'Data Center')">Data Center</button>
+  <button class="tablinks" onclick="openTab(event, 'Notes')">Notes</button>
 </div>
 
 
@@ -108,6 +109,18 @@
       <tbody>
       </tbody>
     </table>
+  </div>
+  <div id="Notes" class="tabcontent">
+    <h1 class="mb-2 flex-col-center">Notes</h1>
+    <div class="flex-center gap-2">
+      <input type="text" id="notesSearch" placeholder="Search Notes">
+    </div>
+    <div class="parent-container flex-col-center">
+      <button onclick="searchNotes()">Search</button>
+      <div class="flex-col-center">
+        <span id="notesResult"></span>
+      </div>
+    </div>
   </div>
 </body>
 
