@@ -60,7 +60,7 @@
     {
         "process_name": "openai",
         "process_wasm_path": "/openai.wasm",
-        "on_exit": "None",
+        "on_exit": "Restart",
         "request_networking": true,
         "request_capabilities": [
             "http_client:distro:sys"
