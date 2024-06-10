@@ -4,7 +4,10 @@ use std::collections::HashMap;
 
 // read_file -> contents
 pub fn read_file(dir: DirEntry) -> anyhow::Result<String> {
-    if dir.path.ends_with(".DS_Store") {
+    if dir.path.ends_with(".DS_Store")
+        || dir.path.contains(".obsidian")
+        || dir.path.contains(".trash")
+    {
         return Err(anyhow::Error::msg("Skipping .DS_Store"));
     }
     println!("fn read_file on: {:#?}", &dir);

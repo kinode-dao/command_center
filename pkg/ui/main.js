@@ -1,9 +1,11 @@
 import FlexSearch from "./node_modules/flexsearch/dist/flexsearch.bundle.module.min.js";
 window.searchNotes = searchNotes;  // Make it available globally
+window.handleLinkClick = handleLinkClick;  // Make it available globally
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById("defaultOpen").click();
 });
+window.addEventListener('hashchange', renderNotePage);
 
 // no thought has been put into these options, probably can be tuned
 const options = {
@@ -35,8 +37,15 @@ export function searchNotes() {
 
   document.getElementById('notesResult').innerHTML =
     `<ul>
-      ${Object.keys(notes_result).map((key) => `<li>${key}</li>`).join('')}
-    </ul>`
+        ${Object.keys(notes_result).map((key) => {
+      return `<nav><a href="#/${key}" id="${key}" target="_blank" onclick="handleLinkClick('${key}')">${key}</a></nav>`
+    }).join('')}
+      </ul>`
+}
+export function handleLinkClick(id) {
+  console.log("clicked");
+  console.log(id);
+  renderNotePage(id);
 }
 
 export async function fetchNotes() {
@@ -46,16 +55,28 @@ export async function fetchNotes() {
       'Content-Type': 'application/json',
     }
   });
-  try {
-    notes = await response.json();
-    console.log(notes);
-    for (let key in notes) {
-      notes_index.add(key, notes[key])
-    }
+  notes = await response.json();
+  console.log(notes);
+  for (let key in notes) {
+    notes_index.add(key, notes[key]);
+    // console.log("creating page for key");
+    // console.log(key);
+    createNotePage(key, notes[key]);
+  }
+}
+function createNotePage(key, note) {
+  // This function is a placeholder to illustrate the concept
+  // Actual implementation of creating "pages" would be handled by the router
+}
 
-  } catch (error) {
-    console.error(error);
-    document.getElementById('notes').textContent = 'Failed to fetch notes.';
+function renderNotePage(noteKey) {
+  console.log("rendering for key");
+  console.log(noteKey);
+  const noteContent = notes[noteKey];
+  if (noteContent) {
+    document.body.innerHTML = `<h1>Note: ${noteKey}</h1><p>${noteContent}</p>`;
+  } else {
+    document.body.innerHTML = '<h1>Note not found</h1>';
   }
 }
 
