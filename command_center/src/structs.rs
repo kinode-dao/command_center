@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use kinode_process_lib::{get_state, set_state, Address};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Eq, Hash, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Pkg {

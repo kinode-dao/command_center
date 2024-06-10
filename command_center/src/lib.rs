@@ -55,6 +55,10 @@ fn handle_http_request(
             fetch_status()
         }
         "/submit_config" => submit_config(our, &bytes, state, pkgs),
+        "/notes" => {
+            println!("fetching notes");
+            fetch_notes()
+        }
         _ => Ok(()),
     }
 }
@@ -75,6 +79,27 @@ fn fetch_status() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn fetch_notes() -> anyhow::Result<()> {
+    let dir_entry: DirEntry = DirEntry {
+        path: NOTES_PATH.to_string(),
+        file_type: FileType::Directory,
+    };
+
+    let notes = files::read_nested_dir(dir_entry)?;
+
+    let response_body = serde_json::to_string(&notes)?;
+    http::send_response(
+        http::StatusCode::OK,
+        Some(HashMap::from([(
+            "Content-Type".to_string(),
+            "application/json".to_string(),
+        )])),
+        response_body.as_bytes().to_vec(),
+    );
+    Ok(())
+}
+
+// also creates state if doesn't exist
 fn submit_config(
     our: &Address,
     body_bytes: &[u8],
@@ -182,6 +207,7 @@ fn handle_message(
 }
 
 const ICON: &str = include_str!("icon");
+const NOTES_PATH: &str = "/command_center:appattacc.os/files/Obsidian Vault";
 call_init!(init);
 fn init(our: Address) {
     let _ = http::serve_ui(
@@ -189,7 +215,7 @@ fn init(our: Address) {
         "ui",
         true,
         false,
-        vec!["/", "/submit_config", "/status"],
+        vec!["/", "/submit_config", "/status", "/notes"],
     );
 
     let mut state = State::fetch();
@@ -246,14 +272,8 @@ fn init(our: Address) {
         None => {}
     }
 
-    let drive_path = create_drive(our.package_id(), "files", Some(5)).unwrap();
-    println!("drive_path: {:?}", drive_path);
-    let dir_path = format!("{}/Obsidian Vault", &drive_path);
-    let dir_entry = DirEntry {
-        path: dir_path.clone(),
-        file_type: FileType::Directory,
-    };
-    let x = files::read_nested_dir(dir_entry);
+    let drive_path: String = create_drive(our.package_id(), "files", Some(5)).unwrap();
+
     loop {
         match handle_message(&our, &mut state, &pkgs) {
             Ok(_) => {}

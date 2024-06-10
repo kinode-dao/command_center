@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 webSocket();
 initializeTooltips();
 fetchStatus();
+fetchNotes();
 
 window.openTab = openTab;
 const options = {
@@ -37,6 +38,22 @@ const result = recipes.filter((recipe) => ids.includes(recipe.id));
 console.log(result);
 
 // index vs doc?????
+
+export async function fetchNotes() {
+  const response = await fetch('/main:command_center:appattacc.os/notes', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
+  try {
+    const data = await response.json();
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+    document.getElementById('notes').textContent = 'Failed to fetch notes.';
+  }
+}
 
 export async function fetchStatus() {
   const response = await fetch('/main:command_center:appattacc.os/status', {
