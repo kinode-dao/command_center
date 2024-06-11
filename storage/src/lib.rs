@@ -83,7 +83,6 @@ fn populate_tweets(our: &Address, state: &mut Option<State>, bytes: &[u8]) -> an
     if let Some(state) = state {
         for (key, value) in tweets {
             if !state.tweets.contains_key(&key) {
-                println!("Inserted tweet: {}", key.clone());
                 state.tweets.insert(key, value);
             }
         }
@@ -93,7 +92,6 @@ fn populate_tweets(our: &Address, state: &mut Option<State>, bytes: &[u8]) -> an
             our: our.clone(),
             tweets: tweets.clone(),
         };
-        println!("NEW Inserted {} tweets", inner_state.tweets.len());
         inner_state.save();
         *state = Some(inner_state);
     }
