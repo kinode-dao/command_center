@@ -9,7 +9,7 @@ pub struct TweetData {
     pub content: String,
     pub photo: Option<String>,
     pub likes: Option<i32>,
-    pub date: Option<String>,
+    pub date: Option<i64>,
     pub comments: Option<i32>,
     pub retweets: Option<i32>,
     pub views: Option<i32>,
