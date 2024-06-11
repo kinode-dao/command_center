@@ -1,5 +1,7 @@
 use kinode_process_lib::{await_message, call_init, get_blob, http, println, Address, Message};
 use std::collections::HashMap;
+use std::time::{SystemTime, UNIX_EPOCH};
+use chrono::{DateTime, Utc, TimeZone};
 
 mod structs;
 use structs::*;
@@ -68,9 +70,7 @@ fn handle_http_request(
                 .ok_or_else(|| anyhow::anyhow!("Failed to get blob"))?
                 .bytes;
             match path.as_str() {
-                "/populate" => {
-                    populate_tweets(our, state, &bytes)
-                }
+                "/populate" => populate_tweets(our, state, &bytes),
                 _ => Ok(()),
             }
         }
@@ -104,8 +104,82 @@ fn populate_tweets(our: &Address, state: &mut Option<State>, bytes: &[u8]) -> an
     Ok(())
 }
 
+fn is_leap_year(year: u64) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+}
+
+fn days_in_month(month: u64, year: u64) -> u64 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if is_leap_year(year) => 29,
+        2 => 28,
+        _ => panic!("Invalid month"),
+    }
+}
+
+fn unix_to_date(unix_timestamp: u64) -> String {
+    let mut seconds = unix_timestamp;
+    let mut minutes = seconds / 60;
+    seconds %= 60;
+    let mut hours = minutes / 60;
+    minutes %= 60;
+    let mut days = hours / 24;
+    hours %= 24;
+
+    let mut year = 1970;
+    while days >= 365 + if is_leap_year(year) { 1 } else { 0 } {
+        days -= 365 + if is_leap_year(year) { 1 } else { 0 };
+        year += 1;
+    }
+
+    let mut month = 1;
+    while days >= days_in_month(month, year) {
+        days -= days_in_month(month, year);
+        month += 1;
+    }
+    let day = days + 1; // Day of month starts at 1
+
+    format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", year, month, day, hours, minutes, seconds)
+}
+
+fn date_to_unix(date_str: &str) -> u64 {
+    let parts: Vec<&str> = date_str.split(['-', 'T', ':', 'Z'].as_ref()).collect();
+    let year: u64 = parts[0].parse().unwrap();
+    let month: u64 = parts[1].parse().unwrap();
+    let day: u64 = parts[2].parse().unwrap();
+    let hour: u64 = parts[3].parse().unwrap();
+    let minute: u64 = parts[4].parse().unwrap();
+    let second: u64 = parts[5].parse().unwrap();
+
+    let mut seconds_since_epoch = 0;
+    for y in 1970..year {
+        seconds_since_epoch += 365 * 86400 + if is_leap_year(y) { 86400 } else { 0 };
+    }
+
+    for m in 1..month {
+        seconds_since_epoch += days_in_month(m, year) * 86400;
+    }
+
+    seconds_since_epoch += (day - 1) * 86400;
+    seconds_since_epoch += hour * 3600;
+    seconds_since_epoch += minute * 60;
+    seconds_since_epoch += second;
+
+    seconds_since_epoch
+}
+
 call_init!(init);
 fn init(our: Address) {
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    let now_as_u64 = now.as_secs();
+    println!("Now is {}", now_as_u64);
+    let datetime: DateTime<Utc> = Utc.timestamp(now_as_u64 as i64, 0);
+    println!("Datetime is {:?}", datetime);
+    let unix_time = datetime.timestamp() as u64;
+    println!("Unix time is {}", unix_time);
+
+
     println!("storage: init");
 
     if let Err(e) = http::serve_index_html(&our, "ui", false, true, vec!["/", "/populate"]) {

@@ -2137,6 +2137,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bincode",
+ "chrono",
  "kinode_process_lib 0.6.0 (git+https://github.com/kinode-dao/process_lib?rev=84b3d84)",
  "serde",
  "serde_json",
