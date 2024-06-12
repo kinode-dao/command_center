@@ -1,7 +1,7 @@
-use kinode_process_lib::{await_message, call_init, get_blob, http, println, Address, Message};
+use kinode_process_lib::{await_message, call_init, get_blob, http, println, Address, Message, Response};
 use std::collections::HashMap;
 // use std::time::{SystemTime, UNIX_EPOCH}; TODO:
-// use chrono::{DateTime, Utc, TimeZone}; TODO: 
+// use chrono::{DateTime, Utc, TimeZone}; TODO:
 use storage_interface::GlobalTweetMap;
 
 mod structs;
@@ -36,39 +36,49 @@ fn handle_message(our: &Address, state: &mut Option<State>) -> anyhow::Result<()
         "http_server:distro:sys" | "http_client:distro:sys" => {
             handle_http_message(&our, &message, state)
         }
-        _ => Ok(()),
+        _ => handle_internal_message(state, &message),
     }
 }
 
-fn handle_internal_message(our: &Address, state: &mut Option<State>, message: &Message) -> anyhow::Result<()> {
+fn handle_internal_message(state: &mut Option<State>, message: &Message) -> anyhow::Result<()> {
     match message {
-        Message::Request { ref body, .. } => handle_internal_request(our, state, body),
+        Message::Request { ref body, .. } => handle_internal_request(state, body),
         Message::Response { .. } => Ok(()),
     }
 }
 
-fn handle_internal_request(our: &Address, state: &mut Option<State>, body: &[u8]) -> anyhow::Result<()> {
-    // let request = storage_interface::Request::from_bytes(body)?;
-    // match request {
-    //     storage_interface::Request::GetTweets { start_time, end_time } => get_tweets(our, state, start_time, end_time),
-    // }
-    Ok(())
+fn handle_internal_request(state: &mut Option<State>, body: &[u8]) -> anyhow::Result<()> {
+    let request = serde_json::from_slice::<storage_interface::Request>(body)?;
+    match request {
+        storage_interface::Request::GetTweets {
+            start_time,
+            end_time,
+        } => get_tweets(state, start_time, end_time),
+    }
 }
 
-fn get_tweets(our: &Address, state: &mut Option<State>, start_time: i64, end_time: i64) -> anyhow::Result<()> {
-    let filtered_tweets = state.as_ref().map_or_else(
+fn get_tweets(state: &mut Option<State>, start_time: i64, end_time: i64) -> anyhow::Result<()> {
+    let filtered_tweets: GlobalTweetMap = state.as_ref().map_or_else(
         || HashMap::new(),
-        |s| s.tweets.iter()
-            .filter(|(_, tweet)| {
-                tweet.date.unwrap_or(0) > start_time && tweet.date.unwrap_or(0) < end_time
-            })
-            .map(|(k, v)| (k.clone(), v.clone()))
-            .collect::<HashMap<_, _>>()
+        |s| {
+            s.tweets
+                .iter()
+                .filter(|(_, tweet)| {
+                    tweet.date.unwrap_or(0) > start_time && tweet.date.unwrap_or(0) < end_time
+                })
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect::<GlobalTweetMap>()
+        },
     );
-    // storage_interface::Response::
+    let _ = Response::new()
+        .body(serde_json::to_vec(
+            &storage_interface::Response::GetTweets {
+                tweets: filtered_tweets,
+            },
+        )?)
+        .send();
     Ok(())
 }
-
 
 fn handle_http_message(
     our: &Address,
