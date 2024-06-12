@@ -2141,7 +2141,18 @@ dependencies = [
  "kinode_process_lib 0.6.0 (git+https://github.com/kinode-dao/process_lib?rev=84b3d84)",
  "serde",
  "serde_json",
+ "storage_interface",
  "wit-bindgen 0.24.0",
+]
+
+[[package]]
+name = "storage_interface"
+version = "0.1.0"
+source = "git+https://github.com/kinode-dao/command_center/?branch=storage_interface#3ea94892167a30b987a2046ac1019de591d9cd02"
+dependencies = [
+ "serde",
+ "serde_derive",
+ "serde_json",
 ]
 
 [[package]]
