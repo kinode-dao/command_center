@@ -1,6 +1,6 @@
 use kinode_process_lib::{get_state, set_state, Address};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{alloc::Global, collections::HashMap};
 
 pub type GlobalTweetMap = HashMap<String, TweetData>;
 
@@ -35,4 +35,20 @@ impl State {
         let serialized_state = bincode::serialize(self).expect("Failed to serialize state");
         set_state(&serialized_state);
     }
+}
+
+// TODO: Zena: Move this to inferface
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Request {
+    GetTweets {
+        start_time: i64,
+        end_time: i64,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Response {
+    GetTweets {
+        tweets: GlobalTweetMap,
+    },
 }

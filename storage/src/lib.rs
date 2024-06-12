@@ -39,6 +39,35 @@ fn handle_message(our: &Address, state: &mut Option<State>) -> anyhow::Result<()
     }
 }
 
+fn handle_internal_message(our: &Address, state: &mut Option<State>, message: &Message) -> anyhow::Result<()> {
+    match message {
+        Message::Request { ref body, .. } => handle_internal_request(our, state, body),
+        Message::Response { .. } => Ok(()),
+    }
+}
+
+fn handle_internal_request(our: &Address, state: &mut Option<State>, body: &[u8]) -> anyhow::Result<()> {
+    let request = Request::from_bytes(body)?;
+    match request {
+        Request::GetTweets { start_time, end_time } => get_tweets(our, state, start_time, end_time),
+    }
+}
+
+fn get_tweets(our: &Address, state: &mut Option<State>, start_time: i64, end_time: i64) -> anyhow::Result<()> {
+    let filtered_tweets = state.as_ref().map_or_else(
+        || HashMap::new(),
+        |s| s.tweets.iter()
+            .filter(|(_, tweet)| {
+                tweet.date.unwrap_or(0) > start_time && tweet.date.unwrap_or(0) < end_time
+            })
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect::<HashMap<_, _>>()
+    );
+    Response::
+    Ok(())
+}
+
+
 fn handle_http_message(
     our: &Address,
     message: &Message,
