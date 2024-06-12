@@ -1,6 +1,5 @@
 use kinode_process_lib::{get_state, set_state, Address};
 use serde::{Deserialize, Serialize};
-use std::{alloc::Global, collections::HashMap};
 use storage_interface::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

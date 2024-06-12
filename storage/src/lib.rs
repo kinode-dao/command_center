@@ -1,7 +1,8 @@
 use kinode_process_lib::{await_message, call_init, get_blob, http, println, Address, Message};
 use std::collections::HashMap;
-use std::time::{SystemTime, UNIX_EPOCH};
-use chrono::{DateTime, Utc, TimeZone};
+// use std::time::{SystemTime, UNIX_EPOCH}; TODO:
+// use chrono::{DateTime, Utc, TimeZone}; TODO: 
+use storage_interface::GlobalTweetMap;
 
 mod structs;
 use structs::*;
@@ -47,10 +48,11 @@ fn handle_internal_message(our: &Address, state: &mut Option<State>, message: &M
 }
 
 fn handle_internal_request(our: &Address, state: &mut Option<State>, body: &[u8]) -> anyhow::Result<()> {
-    let request = Request::from_bytes(body)?;
-    match request {
-        Request::GetTweets { start_time, end_time } => get_tweets(our, state, start_time, end_time),
-    }
+    // let request = storage_interface::Request::from_bytes(body)?;
+    // match request {
+    //     storage_interface::Request::GetTweets { start_time, end_time } => get_tweets(our, state, start_time, end_time),
+    // }
+    Ok(())
 }
 
 fn get_tweets(our: &Address, state: &mut Option<State>, start_time: i64, end_time: i64) -> anyhow::Result<()> {
@@ -63,7 +65,7 @@ fn get_tweets(our: &Address, state: &mut Option<State>, start_time: i64, end_tim
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect::<HashMap<_, _>>()
     );
-    Response::
+    // storage_interface::Response::
     Ok(())
 }
 
