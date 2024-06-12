@@ -1,7 +1,6 @@
 use kinode_process_lib::{await_message, call_init, get_blob, http, println, Address, Message, Response};
 use std::collections::HashMap;
-// use std::time::{SystemTime, UNIX_EPOCH}; TODO:
-// use chrono::{DateTime, Utc, TimeZone}; TODO:
+
 use storage_interface::GlobalTweetMap;
 
 mod structs;
@@ -148,13 +147,6 @@ fn populate_tweets(our: &Address, state: &mut Option<State>, bytes: &[u8]) -> an
 
 call_init!(init);
 fn init(our: Address) {
-    // let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-    // let now_as_u64 = now.as_secs();
-    // println!("Now is {}", now_as_u64);
-    // let datetime: DateTime<Utc> = Utc.timestamp(now_as_u64 as i64, 0);
-    // println!("Datetime is {:?}", datetime);
-    // let unix_time = datetime.timestamp() as u64;
-    // println!("Unix time is {}", unix_time);
     println!("Begin: {:?}", our.process.process_name);
 
     if let Err(e) = http::serve_index_html(&our, "ui", false, true, vec!["/", "/populate"]) {
