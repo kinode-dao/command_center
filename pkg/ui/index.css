@@ -884,9 +884,32 @@ input {
     all: unset
 }
 
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px rgba(158, 158, 158, 0.478)
+        /*#9ca3af
+        rgba(158, 158, 158, 0.478)*/
+        inset !important;
+
+    /* Change white to match your field color */
+    -webkit-text-fill-color: black !important;
+    /* Change text color as needed */
+
+}
+
 select,
 textarea,
-input[type=text],
+input[type=text] {
+    background-color: rgba(158, 158, 158, 0.478);
+    font-size: 16px !important;
+    padding: 8px !important;
+    border-radius: 4px !important;
+}
+
+input[type=file],
+
 input[type=password],
 input[type=checkbox] {
     border-width: 1px;

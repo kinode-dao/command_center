@@ -12,12 +12,15 @@
   </script>
   <script type="module" src="./submitKey.js" defer>
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
 </head>
 
 <div class="tab">
-  <button class="tablinks" onclick="openTab(event, 'Config')" id="defaultOpen">Config </button>
-  <button class="tablinks" onclick="openTab(event, 'Data Center')">Data Center</button>
-  <button class="tablinks" onclick="openTab(event, 'Notes')">Notes</button>
+  <button id="configTab" class="tablinks" onclick="openTab(event, 'Config')">Config</button>
+  <button id="dataCenterTab" class="tablinks" onclick="openTab(event, 'Data Center')">Data
+    Center</button>
+  <button id="importNotesTab" class="tablinks" onclick="openTab(event, 'Import Notes')">Import Notes</button>
+  <button id="notesTab" class="tablinks" onclick="openTab(event, 'Notes')">Notes</button>
 </div>
 
 
@@ -121,6 +124,17 @@
         <span id="notesResult"></span>
       </div>
     </div>
+  </div>
+  <div id="Import Notes" class="tabcontent">
+    <h1 class="mb-2 flex-col-center">Import Notes</h1>
+    <div class="parent-container flex-col-center">
+      <input type="file" id="folderInput" onchange="importNotes()" webkitdirectory multiple style="display: none;">
+      <label for="folderInput" class="button">Choose Files</label>
+      <div class="flex-col-center">
+        <span id="importNotesResult"></span>
+      </div>
+    </div>
+
   </div>
 </body>
 

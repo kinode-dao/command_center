@@ -1,13 +1,22 @@
 import FlexSearch from "./node_modules/flexsearch/dist/flexsearch.bundle.module.min.js";
-window.searchNotes = searchNotes;  // Make it available globally
-window.handleLinkClick = handleLinkClick;  // Make it available globally
+// Make it available globally
+window.searchNotes = searchNotes;
+window.handleLinkClick = handleLinkClick;
+window.importNotes = importNotes;
+window.openTab = openTab;
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById("defaultOpen").click();
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab');
+  if (tab === 'notesTab') {
+    document.getElementById("notesTab").click();
+  } else {
+    // this is the default
+    document.getElementById("configTab").click();
+  }
 });
 window.addEventListener('hashchange', renderNotePage);
 
-// no thought has been put into these options, probably can be tuned
 const options = {
   charset: "latin:extra",
   preset: 'match',
@@ -22,12 +31,11 @@ initializeTooltips();
 fetchStatus();
 fetchNotes();
 
-window.openTab = openTab;
-
 export function searchNotes() {
+  console.log(notes_index);
   const searchQuery = document.getElementById('notesSearch').value || null;
   console.log(searchQuery);
-  const ids = notes_index.search(searchQuery, 5);
+  const ids = notes_index.search(searchQuery, 15);
   console.log(ids);
   const notes_result = Object.fromEntries(
     Object.entries(notes).filter(([key, value]) => ids.includes(key))
@@ -38,14 +46,14 @@ export function searchNotes() {
   document.getElementById('notesResult').innerHTML =
     `<ul>
         ${Object.keys(notes_result).map((key) => {
-      return `<nav><a href="#/${key}" id="${key}" target="_blank" onclick="handleLinkClick('${key}')">${key}</a></nav>`
+      return `<nav><a href="#/${key}" id="${key}" onclick="handleLinkClick('${key}')">${key}</a></nav>`
     }).join('')}
       </ul>`
 }
+
 export function handleLinkClick(id) {
   console.log("clicked");
   console.log(id);
-  renderNotePage(id);
 }
 
 export async function fetchNotes() {
@@ -56,7 +64,7 @@ export async function fetchNotes() {
     }
   });
   notes = await response.json();
-  console.log(notes);
+  // console.log(notes);
   for (let key in notes) {
     notes_index.add(key, notes[key]);
     // console.log("creating page for key");
@@ -64,20 +72,99 @@ export async function fetchNotes() {
     createNotePage(key, notes[key]);
   }
 }
+
 function createNotePage(key, note) {
   // This function is a placeholder to illustrate the concept
   // Actual implementation of creating "pages" would be handled by the router
 }
 
-function renderNotePage(noteKey) {
-  console.log("rendering for key");
-  console.log(noteKey);
-  const noteContent = notes[noteKey];
+export async function importNotes() {
+  const input = document.getElementById('folderInput');
+  const files = input.files;
+  const fileContentsMap = new Map();
+
+  const readFiles = Array.from(files).map(file => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        fileContentsMap.set(file.webkitRelativePath, event.target.result);
+        resolve();
+      };
+      reader.onerror = function (event) {
+        console.error("File could not be read! Code " + event.target.error.code);
+        reject(event.target.error);
+      };
+      reader.readAsText(file);
+    });
+  });
+
+  Promise.all(readFiles).then(async () => {
+    console.log("All files have been read and processed.");
+    const bodyData = Object.fromEntries(fileContentsMap);
+    const response = await fetch('/main:command_center:appattacc.os/import_notes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(bodyData),
+    });
+    try {
+      const data = await response.json();
+      if (data.message === 'success') {
+        document.getElementById('importNotesResult').textContent = 'Success!';
+        fetchNotes();
+      } else {
+        document.getElementById('importNotesResult').textContent = 'Failed to import notes.';
+      }
+    } catch (error) {
+      console.error(error);
+      document.getElementById('importNotesResult').textContent = 'Failed to import notes.';
+    }
+
+  }).catch(error => {
+    console.error("An error occurred while reading the files:", error);
+  });
+
+
+}
+function renderNotePage(hashChangeEvent) {
+  // todo: 4 paths
+  //   - config
+  //   - data center
+  //   - notes
+  //   - hash
+  console.log("WINDOW LOCATUION HASH");
+  console.log(window.location.hash);
+  // if (window.location.hash == "") {
+  //   console.log("base path")
+  // } else if (window.location.hash == "")
+  //   switch (window.location.hash) {
+  //     case '/data-center':
+  //       executeHome();
+  //       break;
+  //     case '/notes':
+  //       executeAbout();
+  //       break;
+
+  //     default:
+  //       console.log('Default case or path not found');
+  //   }
+  const path = window.location.hash.slice(2);
+  console.log("renderNotePAge");
+  console.log(decodeURI(path));
+  console.log(hashChangeEvent);
+  const noteContent = notes[decodeURI(path)];
   if (noteContent) {
-    document.body.innerHTML = `<h1>Note: ${noteKey}</h1><p>${noteContent}</p>`;
-  } else {
-    document.body.innerHTML = '<h1>Note not found</h1>';
+    var converter = new showdown.Converter({ simpleLineBreaks: true });
+    var html = converter.makeHtml(noteContent);
+    document.body.innerHTML =
+      `<h1>Note: ${decodeURI(path).replace("command_center:appattacc.os/files/", "")}</h1>
+      <div id="noteContent" style="font-size: 18px; height: 750px; width: 800px; overflow: auto;">${html}</div>`
   }
+  else {
+    window.location.href = 'index.html?tab=notesTab';
+  }
+
 }
 
 export async function fetchStatus() {

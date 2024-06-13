@@ -12,10 +12,9 @@ pub fn read_file(dir: DirEntry) -> anyhow::Result<String> {
     }
     println!("fn read_file on: {:#?}", &dir);
     let file = open_file(&dir.path, false, Some(5));
-    println!("contents");
     let contents: Vec<u8> = file?.read()?;
     let json = std::str::from_utf8(&contents).map(|s| s.to_string())?;
-    println!("json: {:#?}", &json);
+    // println!("json: {:#?}", &json);
     Ok(json)
 }
 

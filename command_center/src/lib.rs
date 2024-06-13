@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use kinode_process_lib::vfs::{create_drive, DirEntry, FileType};
+use kinode_process_lib::vfs::{
+    create_drive, create_file, open_dir, open_file, DirEntry, FileType, VfsAction, VfsRequest,
+};
 use kinode_process_lib::{
     await_message, call_init, get_blob, http, println, Address, Message, Request,
 };
@@ -59,8 +61,67 @@ fn handle_http_request(
             println!("fetching notes");
             fetch_notes()
         }
+        "/import_notes" => import_notes(&bytes),
         _ => Ok(()),
     }
+}
+
+fn import_notes(body_bytes: &[u8]) -> anyhow::Result<()> {
+    println!("IMPORTING NOTES");
+    let directory: HashMap<String, String> =
+        serde_json::from_slice::<HashMap<String, String>>(body_bytes)?;
+
+    let mut dirs_created: Vec<String> = Vec::new();
+
+    for (file_path, content) in directory.iter() {
+        println!("file_path: {:?}", &file_path);
+
+        let drive_path: &str = "/command_center:appattacc.os/files";
+        let full_file_path = format!("{}/{}", drive_path, file_path);
+
+        println!("file_path: {:?}", &full_file_path);
+
+        let mut split_path: Vec<&str> = full_file_path
+            .split("/")
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<&str>>();
+        split_path.pop();
+        let dir_path = split_path.join("/");
+        println!("dir_path: {:?}", dir_path);
+
+        // not perfect, i.e. it will run create /this/dir even if /this/dir/here/ exists
+        // because it doesnt check was already created when /this/dir/here was created
+        if !dirs_created.contains(&dir_path) {
+            println!("creating dir: {:?}", dir_path);
+            let request = VfsRequest {
+                path: format!("/{}", dir_path).to_string(),
+                action: VfsAction::CreateDirAll,
+            };
+            let _message = Request::new()
+                .target(("our", "vfs", "distro", "sys"))
+                .body(serde_json::to_vec(&request)?)
+                .send_and_await_response(5)?;
+        }
+
+        dirs_created.push(dir_path);
+
+        println!("creating file at {:?}", &full_file_path);
+        let file = open_file(&full_file_path, true, Some(5))?;
+
+        println!("write content to file");
+        file.write(content.as_bytes())?;
+    }
+
+    http::send_response(
+        http::StatusCode::OK,
+        Some(HashMap::from([(
+            "Content-Type".to_string(),
+            "application/json".to_string(),
+        )])),
+        b"{\"message\": \"success\"}".to_vec(),
+    );
+
+    Ok(())
 }
 
 fn fetch_status() -> anyhow::Result<()> {
@@ -86,7 +147,8 @@ fn fetch_notes() -> anyhow::Result<()> {
     };
 
     let notes = files::read_nested_dir(dir_entry)?;
-    println!("notes: {:?}", notes);
+
+    // println!("notes: {:?}", notes);
 
     let response_body = serde_json::to_string(&notes)?;
     http::send_response(
@@ -216,7 +278,7 @@ fn init(our: Address) {
         "ui",
         true,
         false,
-        vec!["/", "/submit_config", "/status", "/notes"],
+        vec!["/", "/submit_config", "/status", "/notes", "/import_notes"],
     );
 
     let mut state = State::fetch();
@@ -273,7 +335,12 @@ fn init(our: Address) {
         None => {}
     }
 
+    // TODO unwrap -> ?
     let drive_path: String = create_drive(our.package_id(), "files", Some(5)).unwrap();
+    println!("drive_path: {:?}", &drive_path);
+    // Creates a file at path, if file found at path, truncates it to 0.
+    let file_path = format!("{}/hello.txt", &drive_path);
+    let file = create_file(&file_path, Some(5));
 
     loop {
         match handle_message(&our, &mut state, &pkgs) {
