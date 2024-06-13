@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use kinode_process_lib::vfs::{
-    create_drive, create_file, open_dir, open_file, DirEntry, FileType, VfsAction, VfsRequest,
-};
+use kinode_process_lib::vfs::{create_drive, open_file, DirEntry, FileType, VfsAction, VfsRequest};
 use kinode_process_lib::{
     await_message, call_init, get_blob, http, println, Address, Message, Request,
 };
@@ -335,12 +333,7 @@ fn init(our: Address) {
         None => {}
     }
 
-    // TODO unwrap -> ?
-    let drive_path: String = create_drive(our.package_id(), "files", Some(5)).unwrap();
-    println!("drive_path: {:?}", &drive_path);
-    // Creates a file at path, if file found at path, truncates it to 0.
-    let file_path = format!("{}/hello.txt", &drive_path);
-    let file = create_file(&file_path, Some(5));
+    let _ = create_drive(our.package_id(), "files", Some(5));
 
     loop {
         match handle_message(&our, &mut state, &pkgs) {

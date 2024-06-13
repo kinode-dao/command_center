@@ -64,18 +64,14 @@ export async function fetchNotes() {
     }
   });
   notes = await response.json();
-  // console.log(notes);
+
   for (let key in notes) {
     notes_index.add(key, notes[key]);
-    // console.log("creating page for key");
-    // console.log(key);
     createNotePage(key, notes[key]);
   }
 }
 
 function createNotePage(key, note) {
-  // This function is a placeholder to illustrate the concept
-  // Actual implementation of creating "pages" would be handled by the router
 }
 
 export async function importNotes() {
@@ -128,31 +124,10 @@ export async function importNotes() {
 
 }
 function renderNotePage(hashChangeEvent) {
-  // todo: 4 paths
-  //   - config
-  //   - data center
-  //   - notes
-  //   - hash
-  console.log("WINDOW LOCATUION HASH");
   console.log(window.location.hash);
-  // if (window.location.hash == "") {
-  //   console.log("base path")
-  // } else if (window.location.hash == "")
-  //   switch (window.location.hash) {
-  //     case '/data-center':
-  //       executeHome();
-  //       break;
-  //     case '/notes':
-  //       executeAbout();
-  //       break;
-
-  //     default:
-  //       console.log('Default case or path not found');
-  //   }
   const path = window.location.hash.slice(2);
-  console.log("renderNotePAge");
+  console.log("renderNotePage");
   console.log(decodeURI(path));
-  console.log(hashChangeEvent);
   const noteContent = notes[decodeURI(path)];
   if (noteContent) {
     var converter = new showdown.Converter({ simpleLineBreaks: true });
