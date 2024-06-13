@@ -268,7 +268,7 @@ fn handle_message(
 }
 
 const ICON: &str = include_str!("icon");
-const NOTES_PATH: &str = "/command_center:appattacc.os/files/Obsidian Vault";
+const NOTES_PATH: &str = "/command_center:appattacc.os/files";
 call_init!(init);
 fn init(our: Address) {
     let _ = http::serve_ui(
