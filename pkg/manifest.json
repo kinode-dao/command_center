@@ -18,7 +18,8 @@
             "openai:command_center:appattacc.os",
             "speech_to_text:command_center:appattacc.os",
             "tg:command_center:appattacc.os",
-            "sqlite:distro:sys"
+            "sqlite:distro:sys",
+            "terminal:terminal:sys"
         ],
         "public": false
     },

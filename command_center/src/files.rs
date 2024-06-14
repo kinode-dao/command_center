@@ -1,6 +1,22 @@
-use kinode_process_lib::println;
 use kinode_process_lib::vfs::{open_dir, open_file, DirEntry, FileType};
+use kinode_process_lib::{println, Address, NodeId, Request};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ClientRequest {
+    // telling the server which data size to expect
+    BackupRequest { node: NodeId, size: u64 },
+}
+
+pub enum ServerResponse {
+    BackupResponse(BackupResponse),
+}
+
+pub enum BackupResponse {
+    Confirm,
+    Decline,
+}
 
 // read_file -> contents
 pub fn read_file(dir: DirEntry) -> anyhow::Result<String> {

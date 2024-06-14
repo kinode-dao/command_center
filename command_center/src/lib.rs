@@ -263,7 +263,29 @@ fn handle_message(
         "http_server:distro:sys" | "http_client:distro:sys" => {
             handle_http_message(&our, &message, state, pkgs)
         }
-        _ => Ok(()),
+        // TODO: filter for getting it from the ui, for now use terminal
+        _ => match &message {
+            Message::Request { body, .. } => {
+                println!("got message from somewhere");
+                println!("message: {:?}", &message);
+                let deserialized = serde_json::from_slice::<files::ClientRequest>(body)?;
+                println!("body: {:?}", deserialized);
+                match deserialized {
+                    FORWARDING TO SERVER
+                    files::ClientRequest::BackupRequest { node, size } => {
+                        let backup_request = serde_json::to_vec(&ClientRequest::BackupRequest {
+                            target: node.clone(),
+                            size: 0,
+                        })?;
+                        let _ = Request::to(node)
+                            .body(backup_request)
+                            .send_and_await_response()?;
+                    }
+                }
+                Ok(())
+            }
+            _ => return Ok(()),
+        },
     }
 }
 

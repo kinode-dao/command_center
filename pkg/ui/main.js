@@ -1,4 +1,5 @@
 import FlexSearch from "./node_modules/flexsearch/dist/flexsearch.bundle.module.min.js";
+
 // Make it available globally
 window.searchNotes = searchNotes;
 window.handleLinkClick = handleLinkClick;
@@ -8,10 +9,16 @@ window.openTab = openTab;
 document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const tab = params.get('tab');
+
   if (tab === 'notesTab') {
     document.getElementById("notesTab").click();
+    const currentUrl = new URL(window.location);
+    const pathSegments = currentUrl.pathname.split('/').filter(segment => segment !== '');
+    pathSegments.pop();
+    const newPathname = '/' + pathSegments.join('/'); // This results in '/users'
+    const newURL = `${newPathname}` + `/`;
+    history.pushState({}, '', newURL);
   } else {
-    // this is the default
     document.getElementById("configTab").click();
   }
 });
@@ -21,7 +28,7 @@ const options = {
   charset: "latin:extra",
   preset: 'match',
   tokenize: 'strict',
-  cache: false
+
 }
 const notes_index = new FlexSearch.Index(options);
 let notes = {};
@@ -57,6 +64,7 @@ export function handleLinkClick(id) {
 }
 
 export async function fetchNotes() {
+  document.getElementById('notesResult').textContent = 'Fetching notes and preparing index...';
   const response = await fetch('/main:command_center:appattacc.os/notes', {
     method: 'POST',
     headers: {
@@ -65,16 +73,29 @@ export async function fetchNotes() {
   });
   notes = await response.json();
 
+  console.log("creating index");
   for (let key in notes) {
-    notes_index.add(key, notes[key]);
-    createNotePage(key, notes[key]);
+    try {  // Ensure the data is a string
+      notes_index.add(key, notes[key]);
+      createNotePage(key, notes[key]);
+    } catch (error) {
+      console.error("Error adding note to index:", key);
+    }
   }
+
+  if (Object.keys(notes).length === 0) {
+    document.getElementById('notesResult').textContent = 'No notes found. Please import.';
+  } else {
+    document.getElementById('notesResult').textContent = 'Ready to search!';
+  }
+  console.log("index created");
 }
 
 function createNotePage(key, note) {
 }
 
 export async function importNotes() {
+  document.getElementById('importNotesResult').textContent = 'Importing notes...';
   const input = document.getElementById('folderInput');
   const files = input.files;
   const fileContentsMap = new Map();
