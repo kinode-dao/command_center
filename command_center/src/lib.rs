@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
+use frankenstein::SendDiceParams;
 use kinode_process_lib::vfs::{create_drive, open_file, DirEntry, FileType, VfsAction, VfsRequest};
 use kinode_process_lib::{
-    await_message, call_init, get_blob, http, println, Address, Message, Request,
+    await_message, call_init, get_blob, http, println, Address, Message, Request, Response,
 };
 
 use llm_interface::openai::*;
@@ -15,6 +16,7 @@ use structs::*;
 mod tg_api;
 
 mod files;
+use files::{BackupResponse, ClientRequest, ServerResponse};
 
 wit_bindgen::generate!({
     path: "wit",
@@ -255,7 +257,41 @@ fn handle_message(
 ) -> anyhow::Result<()> {
     println!("handle message");
     let message = await_message()?;
+    println!("message: {:?}", &message);
     if message.source().node != our.node {
+        match &message {
+            // receiving backup request from client
+            Message::Request { body, .. } => {
+                let deserialized: ClientRequest = serde_json::from_slice::<ClientRequest>(body)?;
+                println!("body: {:?}", deserialized);
+                match deserialized {
+                    ClientRequest::BackupRequest { node_id, size } => {
+                        println!(
+                            "received backup_request from {:?} for {} size",
+                            message.source().node,
+                            size
+                        );
+                        // TODO: add criterion here
+                        let backup_response: Vec<u8> = serde_json::to_vec(
+                            &ServerResponse::BackupResponse(BackupResponse::Confirm),
+                        )?;
+                        let _r = Response::new().body(backup_response).send();
+                    }
+                }
+            }
+            Message::Response { body, .. } => {
+                println!("got response from somewhere");
+                println!("message: {:?}", &message);
+                let deserialized: ServerResponse = serde_json::from_slice::<ServerResponse>(body)?;
+                match deserialized {
+                    ServerResponse::BackupResponse(backup_response) => {
+                        println!("received response from {:?}", message.source().node);
+                        println!("response: {:?}", backup_response)
+                    }
+                    _ => {}
+                }
+            }
+        }
         return Ok(());
     }
     println!("message source: {:?}", message.source());
@@ -265,21 +301,26 @@ fn handle_message(
         }
         // TODO: filter for getting it from the ui, for now use terminal
         _ => match &message {
+            // making backup request to server
             Message::Request { body, .. } => {
                 println!("got message from somewhere");
                 println!("message: {:?}", &message);
                 let deserialized = serde_json::from_slice::<files::ClientRequest>(body)?;
                 println!("body: {:?}", deserialized);
                 match deserialized {
-                    FORWARDING TO SERVER
-                    files::ClientRequest::BackupRequest { node, size } => {
+                    files::ClientRequest::BackupRequest { node_id, size } => {
                         let backup_request = serde_json::to_vec(&ClientRequest::BackupRequest {
-                            target: node.clone(),
+                            node_id: node_id.clone(),
                             size: 0,
                         })?;
-                        let _ = Request::to(node)
-                            .body(backup_request)
-                            .send_and_await_response()?;
+
+                        let _ = Request::to(Address::new(
+                            node_id,
+                            ("main", "command_center", "appattacc.os"),
+                        ))
+                        .expects_response(5)
+                        .body(backup_request)
+                        .send();
                     }
                 }
                 Ok(())

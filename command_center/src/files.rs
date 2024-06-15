@@ -6,13 +6,15 @@ use std::collections::HashMap;
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ClientRequest {
     // telling the server which data size to expect
-    BackupRequest { node: NodeId, size: u64 },
+    BackupRequest { node_id: NodeId, size: u64 },
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub enum ServerResponse {
     BackupResponse(BackupResponse),
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub enum BackupResponse {
     Confirm,
     Decline,
