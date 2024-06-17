@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1.0"
 bincode = "1.3.3"
 frankenstein = { version = "0.30", default-features = false, features = ["telegram-trait"] }
-kinode_process_lib = { git = "https://github.com/kinode-dao/process_lib", rev = "84b3d84" }
+kinode_process_lib = { git = "https://github.com/kinode-dao/process_lib", tag = "v0.8.1" }
 llm_interface = { git = "https://github.com/kinode-dao/llm", branch = "interface"}
 stt_interface = { git = "https://github.com/kinode-dao/stt", branch = "interface"}
 telegram_interface = { git = "https://github.com/kinode-dao/telegram-bot/", branch = "zen/interface" }
