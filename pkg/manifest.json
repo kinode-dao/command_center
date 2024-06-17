@@ -92,5 +92,14 @@
             "openai:command_center:appattacc.os"
         ],
         "public": false
+    },
+    {
+        "process_name": "worker",
+        "process_wasm_path": "/worker.wasm",
+        "on_exit": "None",
+        "request_networking": true,
+        "request_capabilities": [],
+        "grant_capabilities": [],
+        "public": false
     }
 ]
