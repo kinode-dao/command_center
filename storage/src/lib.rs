@@ -7,8 +7,8 @@ mod structs;
 use structs::*;
 
 wit_bindgen::generate!({
-    path: "wit",
-    world: "process",
+    path: "target/wit",
+    world: "process-v0",
 });
 
 pub fn default_headers() -> HashMap<String, String> {
