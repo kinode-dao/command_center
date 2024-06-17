@@ -11,7 +11,9 @@
         ],
         "code_hashes": {
             "0.1.5": "cee6d91e9f8702e07bbf0e942e4b3dc037563d0f2dd5fa9c4088b2c81e336b5b"
-        }
+        }, 
+        "wit_version": 0,
+        "dependencies": []
     },
     "external_url": "https://github.com/kinode-dao/command_center",
     "animation_url": ""

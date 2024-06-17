@@ -19,8 +19,8 @@ mod files;
 use files::{BackupResponse, ClientRequest, ServerResponse};
 
 wit_bindgen::generate!({
-    path: "wit",
-    world: "process",
+    path: "target/wit",
+    world: "process-v0",
 });
 
 fn handle_http_message(
