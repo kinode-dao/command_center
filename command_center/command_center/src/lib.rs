@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use kinode_process_lib::vfs::{
-    create_drive, open_dir, open_file, DirEntry, Directory, FileType, VfsAction, VfsRequest,
-};
+use kinode_process_lib::vfs::{create_drive, DirEntry, FileType};
 use kinode_process_lib::{
     await_message, call_init, get_blob, http, our_capabilities, println, spawn, Address, Message,
     OnExit, Request, Response,
@@ -23,6 +21,86 @@ wit_bindgen::generate!({
     path: "target/wit",
     world: "process-v0",
 });
+
+fn handle_backup_message(our: &Address, message: &Message) -> anyhow::Result<()> {
+    match &message {
+        // receiving backup request from client
+        Message::Request { body, .. } => {
+            let deserialized: ClientRequest = serde_json::from_slice::<ClientRequest>(body)?;
+            match deserialized {
+                ClientRequest::BackupRequest {
+                    node_id,
+                    folder_name,
+                    size,
+                } => {
+                    println!(
+                        "got backup request from client: {:?} for folder-name: {:?}",
+                        message.source().node,
+                        folder_name
+                    );
+
+                    assert_eq!(node_id, our.node);
+                    // TODO: add criterion here
+                    // whether we want to back up or not
+                    let our_worker_address = initialize_worker(our.clone())?;
+
+                    let backup_response: Vec<u8> = serde_json::to_vec(
+                        &ServerResponse::BackupResponse(BackupResponse::Confirm {
+                            folder_name: folder_name.clone(),
+                            worker_address: our_worker_address.clone(),
+                        }),
+                    )?;
+                    let _resp: Result<(), anyhow::Error> =
+                        Response::new().body(backup_response).send();
+
+                    let _worker_request = Request::new()
+                        .body(serde_json::to_vec(&WorkerRequest::Initialize {
+                            name: folder_name.clone(),
+                            target_worker: None,
+                        })?)
+                        .target(&our_worker_address)
+                        .send_and_await_response(5)??;
+                }
+            }
+        }
+        // receiving backup response from server
+        Message::Response { body, .. } => {
+            let deserialized: ServerResponse = serde_json::from_slice::<ServerResponse>(body)?;
+            match deserialized {
+                ServerResponse::BackupResponse(backup_response) => {
+                    if let BackupResponse::Confirm {
+                        folder_name,
+                        worker_address,
+                    } = backup_response
+                    {
+                        println!(
+                            "received Confirm backup_response from {:?} for {}",
+                            message.source().node,
+                            folder_name
+                        );
+
+                        let our_worker_address = initialize_worker(our.clone())?;
+
+                        let _worker_request = Request::new()
+                            .body(serde_json::to_vec(&WorkerRequest::Initialize {
+                                name: folder_name.clone(),
+                                target_worker: Some(worker_address),
+                            })?)
+                            .target(&our_worker_address)
+                            .send_and_await_response(5)??;
+                    } else {
+                        println!(
+                            "received Decline backup_response from {:?}",
+                            message.source().node
+                        );
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    return Ok(());
+}
 
 fn handle_http_message(
     our: &Address,
@@ -101,8 +179,6 @@ fn fetch_notes() -> anyhow::Result<()> {
     };
 
     let notes = files_lib::read_nested_dir(dir_entry)?;
-
-    // println!("notes: {:?}", notes);
 
     let response_body = serde_json::to_string(&notes)?;
     http::send_response(
@@ -204,7 +280,7 @@ fn submit_config(
     Ok(())
 }
 
-fn initialize_worker(our: Address) -> anyhow::Result<(Address)> {
+fn initialize_worker(our: Address) -> anyhow::Result<Address> {
     let our_worker = spawn(
         None,
         &format!("{}/pkg/worker.wasm", our.package_id()),
@@ -224,116 +300,41 @@ fn handle_message(
     our: &Address,
     state: &mut Option<State>,
     pkgs: &HashMap<Pkg, Address>,
-    files_dir: &Directory,
 ) -> anyhow::Result<()> {
     println!("handle message");
     let message = await_message()?;
-    // println!("message: {:?}", &message);
-    // TODO clean up
+
     if message.source().node != our.node {
-        match &message {
-            // receiving backup request from client
-            Message::Request { body, .. } => {
-                let deserialized: ClientRequest = serde_json::from_slice::<ClientRequest>(body)?;
-                println!("body: {:?}", deserialized);
-                match deserialized {
-                    ClientRequest::BackupRequest {
-                        node_id,
-                        folder_name,
-                        size,
-                    } => {
-                        println!(
-                            "received backup_request from {:?} for {} size",
-                            message.source().node,
-                            size
-                        );
-                        // TODO: add criterion here
-                        let our_worker_address = initialize_worker(our.clone())?;
-
-                        let backup_response: Vec<u8> = serde_json::to_vec(
-                            &ServerResponse::BackupResponse(BackupResponse::Confirm {
-                                folder_name: folder_name.clone(),
-                                worker_address: our_worker_address.clone(),
-                            }),
-                        )?;
-                        let _resp: Result<(), anyhow::Error> =
-                            Response::new().body(backup_response).send();
-
-                        let _worker_request = Request::new()
-                            .body(serde_json::to_vec(&WorkerRequest::Initialize {
-                                name: folder_name.clone(),
-                                target_worker: None,
-                            })?)
-                            .target(&our_worker_address)
-                            .send_and_await_response(5)??;
-                    }
-                }
-            }
-            // receiving backup response from server
-            Message::Response { body, .. } => {
-                println!("got response from somewhere");
-                println!("message: {:?}", &message);
-                let deserialized: ServerResponse = serde_json::from_slice::<ServerResponse>(body)?;
-                match deserialized {
-                    ServerResponse::BackupResponse(backup_response) => {
-                        if let BackupResponse::Confirm {
-                            folder_name,
-                            worker_address,
-                        } = backup_response
-                        {
-                            println!(
-                                "received Confirm backup_response from {:?} for {}",
-                                message.source().node,
-                                folder_name
-                            );
-
-                            let our_worker_address = initialize_worker(our.clone())?;
-
-                            let _worker_request = Request::new()
-                                .body(serde_json::to_vec(&WorkerRequest::Initialize {
-                                    name: folder_name.clone(),
-                                    target_worker: Some(worker_address),
-                                })?)
-                                .target(&our_worker_address)
-                                .send_and_await_response(5)??;
-                        } else {
-                            println!(
-                                "received Decline backup_response from {:?}",
-                                message.source().node
-                            );
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
-        return Ok(());
+        handle_backup_message(our, &message)?;
     }
-    println!("message source: {:?}", message.source());
+
     match message.source().process.to_string().as_str() {
         "http_server:distro:sys" | "http_client:distro:sys" => {
             handle_http_message(&our, &message, state, pkgs)
         }
-        // TODO: filter for getting it from the ui, for now use terminal
+        // TODO: add to handle_http_message later, when i implement the ui
+        // for now, it takes inputs from the teriminal
         _ => match &message {
             // making backup request to server
             Message::Request { body, .. } => {
-                println!("got message from somewhere");
-                println!("message: {:?}", &message);
                 let deserialized = serde_json::from_slice::<ClientRequest>(body)?;
-                println!("body: {:?}", deserialized);
+
                 match deserialized {
                     files_lib::ClientRequest::BackupRequest {
                         node_id,
                         folder_name,
                         size,
                     } => {
+                        println!(
+                            "sending backup request to server: {:?} for folder-name: {:?}",
+                            node_id, folder_name
+                        );
+
                         let backup_request = serde_json::to_vec(&ClientRequest::BackupRequest {
                             node_id: node_id.clone(),
                             folder_name: folder_name.clone(),
                             size: 0,
                         })?;
-
                         let _ = Request::to(Address::new(
                             node_id,
                             ("main", "command_center", "appattacc.os"),
@@ -416,11 +417,10 @@ fn init(our: Address) {
         None => {}
     }
 
-    let drive_path = create_drive(our.package_id(), "files", Some(5)).unwrap();
-    let files_dir = open_dir(&drive_path, false, Some(5)).unwrap();
+    let _drive_path = create_drive(our.package_id(), "files", Some(5));
 
     loop {
-        match handle_message(&our, &mut state, &pkgs, &files_dir) {
+        match handle_message(&our, &mut state, &pkgs) {
             Ok(_) => {}
             Err(e) => println!("Error: {:?}", e),
         }

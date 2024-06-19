@@ -1,0 +1,11 @@
+/Users/jurij/kinode_work/command_center/command_center/ai_chatbot_demo/target/wasm32-wasi/release/deps/libhttparse-04f6610fe4e15984.rmeta: /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/lib.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/iter.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/macros.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/simd/mod.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/simd/swar.rs
+
+/Users/jurij/kinode_work/command_center/command_center/ai_chatbot_demo/target/wasm32-wasi/release/deps/libhttparse-04f6610fe4e15984.rlib: /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/lib.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/iter.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/macros.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/simd/mod.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/simd/swar.rs
+
+/Users/jurij/kinode_work/command_center/command_center/ai_chatbot_demo/target/wasm32-wasi/release/deps/httparse-04f6610fe4e15984.d: /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/lib.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/iter.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/macros.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/simd/mod.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/simd/swar.rs
+
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/lib.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/iter.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/macros.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/simd/mod.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/httparse-1.9.3/src/simd/swar.rs:

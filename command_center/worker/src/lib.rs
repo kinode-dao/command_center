@@ -1,21 +1,25 @@
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 use std::str::FromStr;
 
 use kinode_process_lib::{
     await_message, call_init, get_blob, println,
     vfs::{
-        open_dir, open_file, DirEntry, Directory, File, FileType, SeekFrom, VfsAction, VfsRequest,
+        create_file, open_dir, open_file, remove_dir, remove_file, DirEntry, Directory, FileType,
+        SeekFrom, VfsAction, VfsRequest,
     },
-    Address, Message, ProcessId, Request, Response,
+    Address, Message, ProcessId, Request,
 };
 
-use files_lib::{import_notes, read_nested_dir_light};
+use files_lib::read_nested_dir_light;
 
 wit_bindgen::generate!({
     path: "target/wit",
     world: "process-v0",
 });
 
+// when building, test with smaller chunk size, because most text files are less
+// than this, so you won't see if it's working properly.
 const CHUNK_SIZE: u64 = 1048576; // 1MB
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -28,6 +32,7 @@ pub enum WorkerRequest {
         name: String,
         offset: u64,
         length: u64,
+        done: bool,
     },
     Size(u64),
 }
@@ -56,19 +61,22 @@ fn handle_message(
                     target_worker,
                 } => {
                     println!("file_transfer worker: got initialize request");
+                    println!("name: {}", name);
                     // initialize command from main process,
                     // sets up worker, matches on if it's a sender or receiver.
-                    // target_worker = None, we are receiver, else sender.
+                    // if target_worker = None, we are receiver, else sender.
                     let dir_entry: DirEntry = DirEntry {
-                        path: files_dir.path.clone(), //command_center:appattacc.os/files
+                        path: files_dir.path.clone(), // /command_center:appattacc.os/files
                         file_type: FileType::Directory,
                     };
 
                     match target_worker {
                         // send data to target worker
                         Some(target_worker) => {
-                            let mut dir = read_nested_dir_light(dir_entry)?;
+                            // outputs map path contents, a flattened version of the nested dir
+                            let dir = read_nested_dir_light(dir_entry)?;
 
+                            // send each file in the folder
                             for path in dir.keys() {
                                 println!("path: {}", path);
                                 // open/create empty file
@@ -98,41 +106,49 @@ fn handle_message(
                                             name: path.clone(),
                                             offset,
                                             length,
+                                            done: false,
                                         })?)
                                         .target(target_worker.clone())
-                                        .blob_bytes(buffer)
+                                        .blob_bytes(buffer.clone())
                                         .send()?;
                                 }
-                                Response::new()
-                                    .body(serde_json::to_vec(&format!("Done {}", path))?)
-                                    .send()?;
                             }
-                            return Ok(false);
+                            println!("sent everything");
+                            Request::new()
+                                .body(serde_json::to_vec(&WorkerRequest::Chunk {
+                                    name: "".to_string(),
+                                    offset: 0,
+                                    length: 0,
+                                    done: true,
+                                })?)
+                                .target(target_worker.clone())
+                                .send()?;
+
+                            println!("returning true");
+                            return Ok(true);
                         }
                         // start receiving data
-                        // we receive only the name of the overfolder (Google Keep)
+                        // we receive only the name of the overfolder (i.e. Obsidian Vault)
                         None => {
-                            println!("files dir path: {}", files_dir.path);
-                            // OVO JE MOZDA KRIVO initial path (bude google keep)
-                            println!("initial path: {}", name);
-                            let full_path = format!("{}/{}", files_dir.path, name);
-                            println!("Full path for file creation: {}", full_path);
-
-                            let request = VfsRequest {
-                                path: format!("/{}", full_path).to_string(),
-                                action: VfsAction::CreateDirAll,
+                            let full_path = format!("/{}/{}", files_dir.path, name);
+                            println!("starting to receive data for file: {}", full_path);
+                            let request: VfsRequest = VfsRequest {
+                                path: full_path.to_string(),
+                                action: VfsAction::RemoveDirAll,
                             };
                             let _message = Request::new()
                                 .target(("our", "vfs", "distro", "sys"))
                                 .body(serde_json::to_vec(&request)?)
                                 .send_and_await_response(5)?;
 
-                            let mut active_file =
-                                open_file(&format!("{}/{}", files_dir.path, &name), true, Some(5))?;
-
-                            Response::new()
-                                .body(serde_json::to_vec(&"Started")?)
-                                .send()?;
+                            let request: VfsRequest = VfsRequest {
+                                path: full_path.to_string(),
+                                action: VfsAction::CreateDirAll,
+                            };
+                            let _message = Request::new()
+                                .target(("our", "vfs", "distro", "sys"))
+                                .body(serde_json::to_vec(&request)?)
+                                .send_and_await_response(5)?;
                         }
                     }
                 }
@@ -141,17 +157,20 @@ fn handle_message(
                     name,
                     offset,
                     length,
+                    done,
                 } => {
+                    if done == true {
+                        println!("returning true");
+                        return Ok(true);
+                    }
                     let blob = get_blob();
-                    println!("receiving chunk: {}", name);
-                    let mut split_path: Vec<_> = name.split("/").collect();
-                    // let mut split_path: Vec<&str> = split_path.skip(2).collect();
-                    let new_name = split_path.join("/");
-                    split_path.pop();
-                    // OVO JE: NAME I PATH TO DIR SU KRIVI
-                    let path_to_dir = split_path.join("/");
 
-                    println!("path_to_dir: {}", path_to_dir);
+                    // get directory path from file name
+                    let path_to_dir = Path::new(&name)
+                        .parent()
+                        .map_or_else(|| "".to_string(), |p| p.to_string_lossy().to_string());
+
+                    // create directory if it doesn't exist
                     let request = VfsRequest {
                         path: format!("/{}", path_to_dir).to_string(),
                         action: VfsAction::CreateDirAll,
@@ -160,10 +179,19 @@ fn handle_message(
                         .target(("our", "vfs", "distro", "sys"))
                         .body(serde_json::to_vec(&request)?)
                         .send_and_await_response(5)?;
-                    println!("we fail here?");
-                    println!("{}", name);
-                    let mut file = open_file(&name.to_string(), true, Some(5))?;
-                    println!("or further down?");
+
+                    // this feels redundant, but i had problems with open_file(create: true);
+                    let dir = open_dir(&format!("/{}", path_to_dir), false, Some(5))?;
+                    let file_path = format!("/{}", name);
+                    if dir.read()?.contains(&DirEntry {
+                        path: name.clone(),
+                        file_type: FileType::File,
+                    }) {
+                    } else {
+                        let _file = create_file(&file_path, Some(5));
+                    }
+
+                    let mut file = open_file(&file_path, false, Some(5))?;
 
                     let bytes = match blob {
                         Some(blob) => blob.bytes,
@@ -172,6 +200,7 @@ fn handle_message(
                         }
                     };
 
+                    let _pos = file.seek(SeekFrom::Start(offset))?;
                     file.write_all(&bytes)?;
                     // if sender has sent us a size, give a progress update to main transfer!
                     if let Some(size) = size {
@@ -187,14 +216,13 @@ fn handle_message(
 
                         Request::new()
                             .body(serde_json::to_vec(&TransferRequest::Progress {
-                                name: new_name,
+                                name: file_path,
                                 progress,
                             })?)
                             .target(&main_app)
                             .send()?;
 
                         if progress >= 100 {
-                            Response::new().body(serde_json::to_vec(&"Done")?).send()?;
                             return Ok(false);
                         }
                     }
@@ -219,6 +247,7 @@ fn init(our: Address) {
     let drive_path = format!("{}/files", our.package_id());
     let files_dir = open_dir(&drive_path, false, Some(5)).unwrap();
 
+    // TODO size should be a hashmap of sizes for each file
     let mut size: Option<u64> = None;
 
     loop {

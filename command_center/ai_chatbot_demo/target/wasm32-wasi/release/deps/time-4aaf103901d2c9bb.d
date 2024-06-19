@@ -1,0 +1,11 @@
+/Users/jurij/kinode_work/command_center/command_center/ai_chatbot_demo/target/wasm32-wasi/release/deps/libtime-4aaf103901d2c9bb.rmeta: /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/lib.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/display.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/duration.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/parse.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/sys.rs
+
+/Users/jurij/kinode_work/command_center/command_center/ai_chatbot_demo/target/wasm32-wasi/release/deps/libtime-4aaf103901d2c9bb.rlib: /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/lib.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/display.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/duration.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/parse.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/sys.rs
+
+/Users/jurij/kinode_work/command_center/command_center/ai_chatbot_demo/target/wasm32-wasi/release/deps/time-4aaf103901d2c9bb.d: /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/lib.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/display.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/duration.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/parse.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/sys.rs
+
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/lib.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/display.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/duration.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/parse.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/time-0.1.45/src/sys.rs:

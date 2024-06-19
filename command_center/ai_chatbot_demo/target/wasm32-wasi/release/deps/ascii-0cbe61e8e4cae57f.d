@@ -1,0 +1,11 @@
+/Users/jurij/kinode_work/command_center/command_center/ai_chatbot_demo/target/wasm32-wasi/release/deps/libascii-0cbe61e8e4cae57f.rmeta: /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/lib.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/free_functions.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/ascii_char.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/ascii_str.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/ascii_string.rs
+
+/Users/jurij/kinode_work/command_center/command_center/ai_chatbot_demo/target/wasm32-wasi/release/deps/libascii-0cbe61e8e4cae57f.rlib: /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/lib.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/free_functions.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/ascii_char.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/ascii_str.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/ascii_string.rs
+
+/Users/jurij/kinode_work/command_center/command_center/ai_chatbot_demo/target/wasm32-wasi/release/deps/ascii-0cbe61e8e4cae57f.d: /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/lib.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/free_functions.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/ascii_char.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/ascii_str.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/ascii_string.rs
+
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/lib.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/free_functions.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/ascii_char.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/ascii_str.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ascii-0.8.7/src/ascii_string.rs:
