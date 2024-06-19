@@ -98,7 +98,9 @@
         "process_wasm_path": "/worker.wasm",
         "on_exit": "None",
         "request_networking": true,
-        "request_capabilities": [],
+        "request_capabilities": [
+            "main:command_center:appattacc.os"
+        ],
         "grant_capabilities": [],
         "public": false
     }

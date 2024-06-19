@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 files_lib = {path = "../../files_lib"}
+base64 = "0.22.1"
 anyhow = "1.0"
 bincode = "1.3.3"
 frankenstein = { version = "0.30", default-features = false, features = ["telegram-trait"] }

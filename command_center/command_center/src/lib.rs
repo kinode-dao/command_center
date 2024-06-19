@@ -24,19 +24,33 @@ wit_bindgen::generate!({
 
 fn handle_backup_message(our: &Address, message: &Message) -> anyhow::Result<()> {
     match &message {
-        // receiving backup request from client
         Message::Request { body, .. } => {
             let deserialized: ClientRequest = serde_json::from_slice::<ClientRequest>(body)?;
             match deserialized {
-                ClientRequest::BackupRequest {
+                // receiving backup retrieval request from client
+                ClientRequest::BackupRetrieve {
                     node_id,
-                    folder_name,
-                    size,
+                    worker_address,
                 } => {
                     println!(
-                        "got backup request from client: {:?} for folder-name: {:?}",
+                        "got backup retrieval request from client: {:?}",
                         message.source().node,
-                        folder_name
+                    );
+                    let our_worker_address = initialize_worker(our.clone())?;
+
+                    let _worker_request = Request::new()
+                        .body(serde_json::to_vec(&WorkerRequest::Initialize {
+                            uploader_node: our.node.clone(), // redundant here but whatever
+                            target_worker: Some(worker_address),
+                        })?)
+                        .target(&our_worker_address)
+                        .send_and_await_response(5)??;
+                }
+                // receiving backup request from client
+                ClientRequest::BackupRequest { node_id, size } => {
+                    println!(
+                        "got backup request from client: {:?}",
+                        message.source().node,
                     );
 
                     assert_eq!(node_id, our.node);
@@ -46,7 +60,6 @@ fn handle_backup_message(our: &Address, message: &Message) -> anyhow::Result<()>
 
                     let backup_response: Vec<u8> = serde_json::to_vec(
                         &ServerResponse::BackupResponse(BackupResponse::Confirm {
-                            folder_name: folder_name.clone(),
                             worker_address: our_worker_address.clone(),
                         }),
                     )?;
@@ -55,7 +68,7 @@ fn handle_backup_message(our: &Address, message: &Message) -> anyhow::Result<()>
 
                     let _worker_request = Request::new()
                         .body(serde_json::to_vec(&WorkerRequest::Initialize {
-                            name: folder_name.clone(),
+                            uploader_node: message.source().node.clone(),
                             target_worker: None,
                         })?)
                         .target(&our_worker_address)
@@ -68,22 +81,17 @@ fn handle_backup_message(our: &Address, message: &Message) -> anyhow::Result<()>
             let deserialized: ServerResponse = serde_json::from_slice::<ServerResponse>(body)?;
             match deserialized {
                 ServerResponse::BackupResponse(backup_response) => {
-                    if let BackupResponse::Confirm {
-                        folder_name,
-                        worker_address,
-                    } = backup_response
-                    {
+                    if let BackupResponse::Confirm { worker_address } = backup_response {
                         println!(
-                            "received Confirm backup_response from {:?} for {}",
+                            "received Confirm backup_response from {:?}",
                             message.source().node,
-                            folder_name
                         );
 
                         let our_worker_address = initialize_worker(our.clone())?;
 
                         let _worker_request = Request::new()
                             .body(serde_json::to_vec(&WorkerRequest::Initialize {
-                                name: folder_name.clone(),
+                                uploader_node: our.node.clone(), // redundant here but whatever
                                 target_worker: Some(worker_address),
                             })?)
                             .target(&our_worker_address)
@@ -95,7 +103,6 @@ fn handle_backup_message(our: &Address, message: &Message) -> anyhow::Result<()>
                         );
                     }
                 }
-                _ => {}
             }
         }
     }
@@ -315,24 +322,41 @@ fn handle_message(
         // TODO: add to handle_http_message later, when i implement the ui
         // for now, it takes inputs from the teriminal
         _ => match &message {
-            // making backup request to server
             Message::Request { body, .. } => {
                 let deserialized = serde_json::from_slice::<ClientRequest>(body)?;
 
                 match deserialized {
-                    files_lib::ClientRequest::BackupRequest {
-                        node_id,
-                        folder_name,
-                        size,
-                    } => {
-                        println!(
-                            "sending backup request to server: {:?} for folder-name: {:?}",
-                            node_id, folder_name
-                        );
+                    // making backup retrieval request to server
+                    ClientRequest::BackupRetrieve { node_id, .. } => {
+                        println!("sending backup retrieve request to server: {:?}", node_id);
+
+                        let our_worker_address = initialize_worker(our.clone())?;
+                        let _worker_request: Message = Request::new()
+                            .body(serde_json::to_vec(&WorkerRequest::Initialize {
+                                uploader_node: our.node.clone(),
+                                target_worker: None,
+                            })?)
+                            .target(&our_worker_address)
+                            .send_and_await_response(5)??;
+
+                        let backup_retrieve = serde_json::to_vec(&ClientRequest::BackupRetrieve {
+                            node_id: node_id.clone(),
+                            worker_address: our_worker_address,
+                        })?;
+                        let _ = Request::to(Address::new(
+                            node_id,
+                            ("main", "command_center", "appattacc.os"),
+                        ))
+                        .expects_response(5)
+                        .body(backup_retrieve)
+                        .send();
+                    }
+                    // making backup request to server
+                    ClientRequest::BackupRequest { node_id, size } => {
+                        println!("sending backup request to server: {:?}", node_id);
 
                         let backup_request = serde_json::to_vec(&ClientRequest::BackupRequest {
                             node_id: node_id.clone(),
-                            folder_name: folder_name.clone(),
                             size: 0,
                         })?;
                         let _ = Request::to(Address::new(
@@ -417,7 +441,8 @@ fn init(our: Address) {
         None => {}
     }
 
-    let _drive_path = create_drive(our.package_id(), "files", Some(5));
+    let _our_files_path = create_drive(our.package_id(), "files", Some(5));
+    let _encrypted_storage_path = create_drive(our.package_id(), "encrypted_storage", Some(5));
 
     loop {
         match handle_message(&our, &mut state, &pkgs) {

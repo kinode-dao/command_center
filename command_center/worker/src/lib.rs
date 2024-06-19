@@ -1,3 +1,4 @@
+use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::str::FromStr;
@@ -5,13 +6,14 @@ use std::str::FromStr;
 use kinode_process_lib::{
     await_message, call_init, get_blob, println,
     vfs::{
-        create_file, open_dir, open_file, remove_dir, remove_file, DirEntry, Directory, FileType,
-        SeekFrom, VfsAction, VfsRequest,
+        create_file, open_dir, open_file, DirEntry, Directory, FileType, SeekFrom, VfsAction,
+        VfsRequest,
     },
     Address, Message, ProcessId, Request,
 };
 
-use files_lib::read_nested_dir_light;
+use files_lib::encryption::{decrypt_data, encrypt_data};
+use files_lib::{read_nested_dir_light, WorkerRequest};
 
 wit_bindgen::generate!({
     path: "target/wit",
@@ -23,21 +25,6 @@ wit_bindgen::generate!({
 const CHUNK_SIZE: u64 = 1048576; // 1MB
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum WorkerRequest {
-    Initialize {
-        name: String,
-        target_worker: Option<Address>,
-    },
-    Chunk {
-        name: String,
-        offset: u64,
-        length: u64,
-        done: bool,
-    },
-    Size(u64),
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 pub enum TransferRequest {
     ListFiles,
     Download { name: String, target: Address },
@@ -47,6 +34,7 @@ pub enum TransferRequest {
 fn handle_message(
     our: &Address,
     files_dir: &Directory,
+    encrypted_storage_dir: &Directory,
     size: &mut Option<u64>,
 ) -> anyhow::Result<bool> {
     let message = await_message()?;
@@ -57,11 +45,11 @@ fn handle_message(
 
             match request {
                 WorkerRequest::Initialize {
-                    name,
+                    uploader_node,
                     target_worker,
                 } => {
                     println!("file_transfer worker: got initialize request");
-                    println!("name: {}", name);
+                    println!("uploader_node: {}", uploader_node);
                     // initialize command from main process,
                     // sets up worker, matches on if it's a sender or receiver.
                     // if target_worker = None, we are receiver, else sender.
@@ -77,7 +65,7 @@ fn handle_message(
                             let dir = read_nested_dir_light(dir_entry)?;
 
                             // send each file in the folder
-                            for path in dir.keys() {
+                            for mut path in dir.keys() {
                                 println!("path: {}", path);
                                 // open/create empty file
                                 let mut active_file = open_file(path, true, Some(5))?;
@@ -94,6 +82,24 @@ fn handle_message(
 
                                 active_file.seek(SeekFrom::Start(0))?;
 
+                                let mut new_path = String::new();
+                                let prefix = "command_center:appattacc.os/files/";
+                                if path.starts_with(prefix) {
+                                    let extracted_path = &path[..prefix.len()];
+                                    let rest_of_path = &path[prefix.len()..];
+                                    println!("Extracted path: {}", extracted_path);
+                                    println!("Rest of path: {}", rest_of_path);
+                                    let encrypted_vec =
+                                        &encrypt_data(rest_of_path.as_bytes(), "password");
+                                    let rest_of_path =
+                                        general_purpose::URL_SAFE.encode(&encrypted_vec);
+                                    new_path = format!("{}{}", extracted_path, &rest_of_path);
+                                } else {
+                                    return Err(anyhow::anyhow!(
+                                        "Path does not start with the expected prefix"
+                                    ));
+                                }
+
                                 for i in 0..num_chunks {
                                     let offset = i * CHUNK_SIZE;
                                     let length = CHUNK_SIZE.min(size - offset);
@@ -101,15 +107,17 @@ fn handle_message(
                                     let mut buffer = vec![0; length as usize];
                                     active_file.read_at(&mut buffer)?;
 
+                                    let encrypted_buffer = encrypt_data(&buffer, "password");
+
                                     Request::new()
                                         .body(serde_json::to_vec(&WorkerRequest::Chunk {
-                                            name: path.clone(),
+                                            name: new_path.clone(),
                                             offset,
                                             length,
                                             done: false,
                                         })?)
                                         .target(target_worker.clone())
-                                        .blob_bytes(buffer.clone())
+                                        .blob_bytes(encrypted_buffer.clone())
                                         .send()?;
                                 }
                             }
@@ -130,7 +138,8 @@ fn handle_message(
                         // start receiving data
                         // we receive only the name of the overfolder (i.e. Obsidian Vault)
                         None => {
-                            let full_path = format!("/{}/{}", files_dir.path, name);
+                            let full_path: String =
+                                format!("/{}/{}", encrypted_storage_dir.path, uploader_node);
                             println!("starting to receive data for file: {}", full_path);
                             let request: VfsRequest = VfsRequest {
                                 path: full_path.to_string(),
@@ -165,10 +174,10 @@ fn handle_message(
                     }
                     let blob = get_blob();
 
-                    // get directory path from file name
-                    let path_to_dir = Path::new(&name)
-                        .parent()
-                        .map_or_else(|| "".to_string(), |p| p.to_string_lossy().to_string());
+                    println!("got name: {}", name);
+                    // get directory path from node name
+                    let path_to_dir =
+                        format!("{}/{}", encrypted_storage_dir.path, message.source().node());
 
                     // create directory if it doesn't exist
                     let request = VfsRequest {
@@ -182,7 +191,10 @@ fn handle_message(
 
                     // this feels redundant, but i had problems with open_file(create: true);
                     let dir = open_dir(&format!("/{}", path_to_dir), false, Some(5))?;
-                    let file_path = format!("/{}", name);
+                    let path = Path::new(name.as_str());
+                    let file_name = path.file_name().unwrap().to_str().unwrap();
+
+                    let file_path = format!("/{}/{}", path_to_dir, &file_name);
                     if dir.read()?.contains(&DirEntry {
                         path: name.clone(),
                         file_type: FileType::File,
@@ -244,14 +256,16 @@ fn init(our: Address) {
     println!("file_transfer worker: begin");
     let start = std::time::Instant::now();
 
-    let drive_path = format!("{}/files", our.package_id());
-    let files_dir = open_dir(&drive_path, false, Some(5)).unwrap();
+    let our_files_path = format!("{}/files", our.package_id());
+    let files_dir = open_dir(&our_files_path, false, Some(5)).unwrap();
+    let encrypted_storage_path = format!("{}/encrypted_storage", our.package_id());
+    let encrypted_storage_dir = open_dir(&encrypted_storage_path, false, Some(5)).unwrap();
 
     // TODO size should be a hashmap of sizes for each file
     let mut size: Option<u64> = None;
 
     loop {
-        match handle_message(&our, &files_dir, &mut size) {
+        match handle_message(&our, &files_dir, &encrypted_storage_dir, &mut size) {
             Ok(exit) => {
                 if exit {
                     println!(
