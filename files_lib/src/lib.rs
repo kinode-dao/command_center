@@ -3,13 +3,18 @@ use kinode_process_lib::{http, println, Address, NodeId, Request};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+pub mod encryption;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ClientRequest {
     // telling the server which data size to expect
     BackupRequest {
         node_id: NodeId,
-        folder_name: String,
         size: u64,
+    },
+    BackupRetrieve {
+        node_id: NodeId,
+        worker_address: Address,
     },
 }
 
@@ -20,19 +25,23 @@ pub enum ServerResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum BackupResponse {
-    Confirm {
-        folder_name: String,
-        worker_address: Address,
-    },
+    Confirm { worker_address: Address },
     Decline,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum WorkerRequest {
     Initialize {
-        name: String, // folder name
+        uploader_node: NodeId,
         target_worker: Option<Address>,
     },
+    Chunk {
+        done: bool,
+        name: String,
+        offset: u64,
+        length: u64,
+    },
+    Size(u64),
 }
 
 // read_file -> contents

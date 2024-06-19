@@ -1,0 +1,10 @@
+/Users/jurij/kinode_work/command_center/files_lib/target/debug/deps/liballoy_sol_macro_input-ca62c7b5b25c1644.rmeta: /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/lib.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/attr.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/input.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/expander.rs
+
+/Users/jurij/kinode_work/command_center/files_lib/target/debug/deps/liballoy_sol_macro_input-ca62c7b5b25c1644.rlib: /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/lib.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/attr.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/input.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/expander.rs
+
+/Users/jurij/kinode_work/command_center/files_lib/target/debug/deps/alloy_sol_macro_input-ca62c7b5b25c1644.d: /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/lib.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/attr.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/input.rs /Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/expander.rs
+
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/lib.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/attr.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/input.rs:
+/Users/jurij/.cargo/registry/src/index.crates.io-6f17d22bba15001f/alloy-sol-macro-input-0.7.6/src/expander.rs:

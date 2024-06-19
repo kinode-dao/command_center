@@ -1,0 +1,2 @@
+cargo:rerun-if-changed=build.rs
+cargo:rustc-env=DEBUG_OUTPUT_DIR=/Users/jurij/kinode_work/command_center/files_lib/target/debug/build/wit-bindgen-rust-macro-dc0ab00d0f6bf344/out

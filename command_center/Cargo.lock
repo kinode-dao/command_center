@@ -1015,13 +1015,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bincode",
- "hex 0.4.3",
  "kinode_process_lib 0.8.0",
  "rand 0.8.5",
  "rust-crypto-wasm",
  "serde",
  "serde_json",
- "sha2",
  "wit-bindgen 0.24.0",
 ]
 

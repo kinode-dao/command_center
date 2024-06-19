@@ -1,0 +1,12 @@
+/Users/jurij/kinode_work/command_center/files_lib/target/debug/deps/liballoy_transport-328f175f8d93d3b8.rmeta: /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/lib.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/boxed.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/connect.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/common.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/error.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/trait.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/utils.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/../README.md
+
+/Users/jurij/kinode_work/command_center/files_lib/target/debug/deps/alloy_transport-328f175f8d93d3b8.d: /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/lib.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/boxed.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/connect.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/common.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/error.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/trait.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/utils.rs /Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/../README.md
+
+/Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/lib.rs:
+/Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/boxed.rs:
+/Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/connect.rs:
+/Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/common.rs:
+/Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/error.rs:
+/Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/trait.rs:
+/Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/utils.rs:
+/Users/jurij/.cargo/git/checkouts/alloy-805bdb2c8d2cb5fa/cad7935/crates/transport/src/../README.md:
