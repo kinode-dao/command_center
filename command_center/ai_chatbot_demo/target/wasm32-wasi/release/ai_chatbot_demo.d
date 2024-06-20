@@ -1,1 +1,0 @@
-/Users/jurij/kinode_work/command_center/command_center/ai_chatbot_demo/target/wasm32-wasi/release/ai_chatbot_demo.wasm: /Users/jurij/kinode_work/command_center/command_center/ai_chatbot_demo/src/lib.rs /Users/jurij/kinode_work/command_center/command_center/ai_chatbot_demo/target/wit/kinode.wit

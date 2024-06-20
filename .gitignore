@@ -1,24 +1,15 @@
-/command_center/*/target/
-/command_center/target
-/command_center/pkg/*.wasm
-/command_center/!pkg/tg.wasm
-/command_center/!pkg/openai.wasm
-/command_center/!pkg/speech_to_text.wasm
-/command_center/!pkg/command_center.wasm
-/command_center/*.swp
-/command_center/*.swo
-/command_center/*/wasi_snapshot_preview1.wasm
-/command_center/*/wit/
-/command_center/*/process_env
-/command_center/*/target/
-/command_center/target
-/files_lib/pkg/*.wasm
-/files_lib/!pkg/tg.wasm
-/files_lib/!pkg/openai.wasm
-/files_lib/!pkg/speech_to_text.wasm
-/files_lib/!pkg/command_center.wasm
-/files_lib/*.swp
-/files_lib/*.swo
-/files_lib/*/wasi_snapshot_preview1.wasm
-/files_lib/*/wit/
-/files_lib/*/process_env
+# .DS_Store
+
+# **/target/
+# *.wasm
+# *.swp
+# *.swo
+# */wasi_snapshot_preview1.wasm
+# */wit/
+# */process_env
+
+# /command_center/pkg/*.wasm
+# /command_center/!pkg/tg.wasm
+# /command_center/!pkg/openai.wasm
+# /command_center/!pkg/speech_to_text.wasm
+# /command_center/!pkg/command_center.wasm
