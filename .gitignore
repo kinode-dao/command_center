@@ -1,15 +1,11 @@
-# .DS_Store
+.DS_Store
 
-# **/target/
-# *.wasm
-# *.swp
-# *.swo
-# */wasi_snapshot_preview1.wasm
-# */wit/
-# */process_env
+**/target/
+*.wasm
+*.swp
+*.swo
+*/wasi_snapshot_preview1.wasm
+*/wit/
+*/process_env
 
-# /command_center/pkg/*.wasm
-# /command_center/!pkg/tg.wasm
-# /command_center/!pkg/openai.wasm
-# /command_center/!pkg/speech_to_text.wasm
-# /command_center/!pkg/command_center.wasm
+/command_center/!pkg/*.wasm
