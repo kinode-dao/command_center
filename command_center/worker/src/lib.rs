@@ -103,9 +103,8 @@ fn handle_message(
                                     .target(target_worker.clone())
                                     .send()?;
 
-                                active_file.seek(SeekFrom::Start(0))?;
-
                                 let mut new_path = String::new();
+                                let _pos = active_file.seek(SeekFrom::Start(0))?;
 
                                 // setting the right path
                                 match request_type {
@@ -155,6 +154,8 @@ fn handle_message(
                                             println!("length: {}", length);
                                             let mut buffer = vec![0; length as usize];
                                             println!("buffer: {:?}", buffer.len());
+                                            let pos = active_file.seek(SeekFrom::Current(0))?;
+                                            println!("pos: {}", pos);
                                             active_file.read_at(&mut buffer)?;
                                             // println!("buffer: {:?}", buffer);
                                             let buffer = encrypt_data(&buffer, "password");
@@ -163,9 +164,7 @@ fn handle_message(
                                                 &buffer[..5.min(buffer.len())],
                                                 &buffer[buffer.len().saturating_sub(5)..]
                                             );
-                                            let decrypted_buffer =
-                                                decrypt_data(&buffer, "password");
-                                            // println!("decrypted_buffer: {:?}", decrypted_buffer);
+
                                             let encrypted_length = buffer.len() as u64;
                                             println!("encrypted_length: {}", encrypted_length);
                                             println!("encrypted_offset: {}", encrypted_offset);
@@ -185,16 +184,24 @@ fn handle_message(
                                         }
                                     }
                                     RetrievingBackup => {
+                                        println!("OFFSET SUX HERE");
                                         // buffer size is consistent, so easy
                                         let num_chunks =
                                             (size as f64 / chunk_size as f64).ceil() as u64;
 
                                         for i in 0..num_chunks {
+                                            println!("OFFSET SUX HERE");
+
                                             let offset = i * chunk_size;
                                             let length = chunk_size.min(size - offset);
 
+                                            println!("offset: {}", offset);
+                                            println!("length: {}", length);
                                             let mut buffer = vec![0; length as usize];
+                                            let pos = active_file.seek(SeekFrom::Current(0))?;
+                                            println!("pos: {}", pos);
                                             active_file.read_at(&mut buffer)?;
+                                            println!("name: {}", new_path.clone());
                                             println!(
                                                 "encrypted_buffer first 5: {:?}, last 5: {:?}",
                                                 &buffer[..5.min(buffer.len())],
@@ -239,19 +246,21 @@ fn handle_message(
                                 BackingUp => {
                                     full_path =
                                         format!("{}/{}", encrypted_storage_dir.path, uploader_node);
-                                    let request: VfsRequest = VfsRequest {
-                                        path: full_path.to_string(),
-                                        action: VfsAction::RemoveDirAll,
-                                    };
-                                    let _message = Request::new()
-                                        .target(("our", "vfs", "distro", "sys"))
-                                        .body(serde_json::to_vec(&request)?)
-                                        .send_and_await_response(5)?;
                                 }
                                 RetrievingBackup => {
                                     full_path = files_dir.path.clone();
                                 }
                             }
+                            println!("REMOVING: {}", full_path);
+                            let request: VfsRequest = VfsRequest {
+                                path: full_path.to_string(),
+                                action: VfsAction::RemoveDirAll,
+                            };
+                            let _message = Request::new()
+                                .target(("our", "vfs", "distro", "sys"))
+                                .body(serde_json::to_vec(&request)?)
+                                .send_and_await_response(5)?;
+
                             println!("starting to receive data for file: {}", full_path);
 
                             // maybe this is unnecessary in both cases (whether retrieving backup or backing up)?
@@ -337,30 +346,14 @@ fn handle_message(
                                 .body(serde_json::to_vec(&request)?)
                                 .send_and_await_response(5)?;
 
-                            let dir = open_dir(&format!("/{}", parent_path), false, Some(5))?;
-                            if dir.read()?.contains(&DirEntry {
-                                path: file_name.to_string(),
-                                file_type: FileType::File,
-                            }) {
-                            } else {
-                                let _file = create_file(&file_path, Some(5));
-                            }
+                            println!("opening dir at: {}", parent_path);
+                            let _dir = open_dir(&parent_path, false, Some(5))?;
                         }
                         BackingUp => {
                             file_path = format!("/{}/{}", path_to_dir, &file_name);
-
-                            let dir = open_dir(&format!("/{}", path_to_dir), false, Some(5))?;
-                            if dir.read()?.contains(&DirEntry {
-                                path: name.clone(),
-                                file_type: FileType::File,
-                            }) {
-                            } else {
-                                let _file = create_file(&file_path, Some(5));
-                            }
+                            let _dir = open_dir(&format!("/{}", path_to_dir), false, Some(5))?;
                         }
                     }
-
-                    let mut file = open_file(&file_path, false, Some(5))?;
 
                     let bytes = match blob {
                         Some(blob) => blob.bytes,
@@ -369,40 +362,50 @@ fn handle_message(
                         }
                     };
                     println!("bytes length: {}", bytes.len());
-                    println!(
-                        "bytes recieved first 5: {:?}, last 5: {:?}",
-                        &bytes[..5.min(bytes.len())],
-                        &bytes[bytes.len().saturating_sub(5)..]
-                    );
 
-                    // println!("bytes: {:?}", bytes);
-
-                    println!("length: {}", length);
-                    println!("offset: {}", offset);
-                    let pos = file.seek(SeekFrom::Start(offset))?;
+                    // let pos = file.seek(SeekFrom::Start(offset))?;
 
                     match request_type {
                         BackingUp => {
                             println!("backing up writing");
                             println!("offset: {}", offset);
                             println!("length: {}", length);
-                            println!("pos: {}", pos);
+                            // println!("pos: {}", pos);
                             println!("bytes: {:?}", bytes.len());
                             println!(
                                 "bytes first 5: {:?}, last 5: {:?}",
                                 &bytes[..5.min(bytes.len())],
                                 &bytes[bytes.len().saturating_sub(5)..]
                             );
-                            file.write_all(&bytes)?;
-                            // println!("file.read(): {:?}", file.read()?);
+                            println!("file_path: {}", file_path);
+                            let mut file = open_file(&file_path, true, Some(5))?;
+                            let read = file.read()?;
+                            println!("read1: {:?}", read.len());
+                            file.append(&bytes)?;
+                            let read = file.read()?;
+                            println!("read2: {:?}", read.len());
                         }
                         RetrievingBackup => {
+                            println!("length: {}", length);
+
                             println!("bytes: {:?}", bytes.len());
+                            println!("offset: {}", offset);
+
+                            // println!("pos: {}", pos);
 
                             let decrypted_bytes =
                                 decrypt_data(&bytes, "password").unwrap_or_default();
                             println!("decrypted bytes: {:?}", decrypted_bytes.len());
-                            file.write_all(&decrypted_bytes)?;
+                            println!(
+                                "decrypted_bytes first 5: {:?}, last 5: {:?}",
+                                &decrypted_bytes[..3.min(decrypted_bytes.len())],
+                                &decrypted_bytes[decrypted_bytes.len().saturating_sub(3)..]
+                            );
+                            println!("file_path: {}", file_path);
+                            let mut file = open_file(&file_path, true, Some(5))?;
+                            println!("appending");
+                            file.append(&decrypted_bytes)?;
+                            println!("appended");
                         }
                     }
 
