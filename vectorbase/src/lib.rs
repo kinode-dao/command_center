@@ -48,11 +48,11 @@ fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()>
                 input: values,
             };
             let openai_request = OpenAIRequest::Embedding(embedding_request);
-            let OpenAIResponse::Embedding(response) = Request::to(LLM_ADDRESS)
+            let response = Request::to(LLM_ADDRESS)
                 .body(openai_request)
-                .send_and_await_response(30)?? else {
-                    return Err(anyhow::anyhow!("Failed to send embedding request"));
-                };
+                .send_and_await_response(30)??;
+            // TODO: Zena: Entrypoint
+            // response.
             let embeddings = response.embedding;
 
             state
