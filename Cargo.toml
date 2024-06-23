@@ -3,7 +3,8 @@ resolver = "2"
 members = [
     "command_center",
     "ai_chatbot_demo",
-    "storage"
+    "storage", 
+    "vectorbase"
 ]
 
 [profile.release]

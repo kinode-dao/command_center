@@ -33,7 +33,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "frankenstein",
- "kinode_process_lib 0.8.0",
+ "kinode_process_lib 0.8.0 (git+https://github.com/kinode-dao/process_lib?tag=v0.8.1)",
  "llm_interface",
  "serde",
  "serde_json",
@@ -701,7 +701,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "frankenstein",
- "kinode_process_lib 0.8.0",
+ "kinode_process_lib 0.8.0 (git+https://github.com/kinode-dao/process_lib?tag=v0.8.1)",
  "llm_interface",
  "serde",
  "serde_json",
@@ -1529,6 +1529,28 @@ dependencies = [
  "thiserror",
  "url 2.5.1",
  "wit-bindgen 0.17.0",
+]
+
+[[package]]
+name = "kinode_process_lib"
+version = "0.8.0"
+source = "git+https://github.com/kinode-dao/process_lib?tag=v0.8.0#95a4b042939b760d58c4c4c4eb92f43e813fc1d2"
+dependencies = [
+ "alloy-json-rpc 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=cad7935)",
+ "alloy-primitives 0.7.6",
+ "alloy-rpc-types 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=cad7935)",
+ "alloy-transport 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=cad7935)",
+ "anyhow",
+ "bincode",
+ "http",
+ "mime_guess 2.0.4",
+ "rand 0.8.5",
+ "rmp-serde",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "url 2.5.1",
+ "wit-bindgen 0.24.0",
 ]
 
 [[package]]
@@ -2518,7 +2540,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "chrono",
- "kinode_process_lib 0.8.0",
+ "kinode_process_lib 0.8.0 (git+https://github.com/kinode-dao/process_lib?tag=v0.8.1)",
  "serde",
  "serde_json",
  "storage_interface",
@@ -2987,6 +3009,18 @@ name = "valuable"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
+
+[[package]]
+name = "vectorbase"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "kinode_process_lib 0.8.0 (git+https://github.com/kinode-dao/process_lib?tag=v0.8.0)",
+ "serde",
+ "serde_json",
+ "wit-bindgen 0.24.0",
+]
 
 [[package]]
 name = "version_check"
