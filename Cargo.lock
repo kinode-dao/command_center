@@ -1620,7 +1620,7 @@ checksum = "643cb0b8d4fcc284004d5fd0d67ccf61dfffadb7f75e1e71bc420f4688a3a704"
 [[package]]
 name = "llm_interface"
 version = "0.1.0"
-source = "git+https://github.com/kinode-dao/llm?branch=interface#2bd3067f13e319a7128481598a7e5ae248a924e5"
+source = "git+https://github.com/kinode-dao/llm?branch=interface#9b7ed786834f2732699f66fdc8a46f7b9b38f9c1"
 dependencies = [
  "anyhow",
  "derive_builder",
@@ -3017,9 +3017,21 @@ dependencies = [
  "anyhow",
  "bincode",
  "kinode_process_lib 0.8.0 (git+https://github.com/kinode-dao/process_lib?tag=v0.8.0)",
+ "llm_interface",
  "serde",
  "serde_json",
+ "vectorbase_interface",
  "wit-bindgen 0.24.0",
+]
+
+[[package]]
+name = "vectorbase_interface"
+version = "0.1.0"
+source = "git+https://github.com/kinode-dao/command_center?branch=vectorbase_interface#f0def5a6767ea7daf01af738c3c2b1474654c1d3"
+dependencies = [
+ "serde",
+ "serde_derive",
+ "serde_json",
 ]
 
 [[package]]
