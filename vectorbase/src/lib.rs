@@ -123,6 +123,11 @@ fn semantic_search(
     let query_embedding = embedding_response.embeddings[0].clone();
 
     let Some(vec_database) = state.databases.get(&database_name) else {
+        Response::new()
+            .body(serde_json::to_vec(&VectorbaseResponse::Error(
+                "Database not found".to_string(),
+            ))?)
+            .send()?;
         return Ok(());
     };
     let top_results = similarity_search(vec_database, &query_embedding, top_k);
