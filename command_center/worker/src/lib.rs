@@ -41,6 +41,7 @@ fn handle_message(
     files_dir: &Directory,
     encrypted_storage_dir: &Directory,
     size: &mut Option<u64>,
+    password_hash_temp: &mut String,
 ) -> anyhow::Result<bool> {
     let message = await_message()?;
 
@@ -51,10 +52,16 @@ fn handle_message(
             match request {
                 WorkerRequest::Initialize {
                     request_type,
+                    password_hash,
                     uploader_node,
                     target_worker,
                 } => {
                     println!("file_transfer worker: got initialize request");
+
+                    if let Some(received_hash) = password_hash.clone() {
+                        *password_hash_temp = received_hash;
+                    }
+                    println!("password_hash_temp: {}", password_hash_temp);
 
                     let chunk_size = match request_type {
                         BackingUp => CHUNK_SIZE,
@@ -112,10 +119,13 @@ fn handle_message(
                                     BackingUp => {
                                         // encrypt file name
                                         let prefix = "command_center:appattacc.os/files/";
+                                        println!("password_hash_temp: {}", password_hash_temp);
                                         if path.starts_with(prefix) {
                                             let rest_of_path = &path[prefix.len()..];
-                                            let encrypted_vec =
-                                                &encrypt_data(rest_of_path.as_bytes(), "password");
+                                            let encrypted_vec = &encrypt_data(
+                                                rest_of_path.as_bytes(),
+                                                password_hash_temp.as_str(),
+                                            );
                                             let rest_of_path =
                                                 general_purpose::URL_SAFE.encode(&encrypted_vec);
                                             file_name = rest_of_path;
@@ -142,11 +152,14 @@ fn handle_message(
                                 // chunking and sending
                                 match request_type {
                                     BackingUp => {
+                                        println!("here?2");
                                         // have to deal with encryption change the length of buffer
                                         // hence offset needs to be accumulated and length of each chunk sent can change
                                         let mut encrypted_offset: u64 = 0;
                                         let num_chunks =
                                             (size as f64 / chunk_size as f64).ceil() as u64;
+
+                                        println!("here?3");
 
                                         for i in 0..num_chunks {
                                             let offset = i * chunk_size;
@@ -154,9 +167,11 @@ fn handle_message(
                                             let mut buffer = vec![0; length as usize];
                                             let _pos = active_file.seek(SeekFrom::Current(0))?;
                                             active_file.read_at(&mut buffer)?;
-                                            let buffer = encrypt_data(&buffer, "password");
+                                            let buffer =
+                                                encrypt_data(&buffer, password_hash_temp.as_str());
 
                                             let encrypted_length = buffer.len() as u64;
+                                            println!("here?4");
 
                                             Request::new()
                                                 .body(serde_json::to_vec(&WorkerRequest::Chunk {
@@ -220,13 +235,17 @@ fn handle_message(
                             let mut full_path = String::new();
                             match request_type {
                                 BackingUp => {
-                                    full_path =
-                                        format!("{}/{}", encrypted_storage_dir.path, uploader_node);
+                                    full_path = format!(
+                                        "{}/{}",
+                                        encrypted_storage_dir.path,
+                                        uploader_node.unwrap_or_default()
+                                    );
                                 }
                                 RetrievingBackup => {
                                     full_path = files_dir.path.clone();
                                 }
                             }
+
                             let request: VfsRequest = VfsRequest {
                                 path: full_path.to_string(),
                                 action: VfsAction::RemoveDirAll,
@@ -243,6 +262,7 @@ fn handle_message(
                                 path: full_path.to_string(),
                                 action: VfsAction::CreateDirAll,
                             };
+
                             let _message = Request::new()
                                 .target(("our", "vfs", "distro", "sys"))
                                 .body(serde_json::to_vec(&request)?)
@@ -277,6 +297,7 @@ fn handle_message(
                                 path: format!("/{}", path_to_dir).to_string(),
                                 action: VfsAction::CreateDirAll,
                             };
+
                             let _message = Request::new()
                                 .target(("our", "vfs", "distro", "sys"))
                                 .body(serde_json::to_vec(&request)?)
@@ -293,12 +314,14 @@ fn handle_message(
                         RetrievingBackup => {
                             let decoded_vec = general_purpose::URL_SAFE.decode(&file_name)?;
                             let decrypted_vec =
-                                decrypt_data(&decoded_vec, "password").unwrap_or_default();
+                                decrypt_data(&decoded_vec, password_hash_temp).unwrap_or_default();
                             let decrypted_path = String::from_utf8(decrypted_vec).map_err(|e| {
                                 anyhow::anyhow!("Failed to convert bytes to string: {}", e)
                             })?;
+                            println!("here");
 
                             file_path = format!("/{}/{}", path_to_dir, decrypted_path);
+                            println!("decrypted full path: {}", file_path);
                             parent_path = Path::new(&file_path)
                                 .parent()
                                 .and_then(|p| p.to_str())
@@ -314,9 +337,13 @@ fn handle_message(
                                 .body(serde_json::to_vec(&request)?)
                                 .send_and_await_response(5)?;
 
+                            println!("here1");
+
                             let _dir = open_dir(&parent_path, false, Some(5))?;
                         }
                         BackingUp => {
+                            println!("here?1");
+
                             file_path = format!("/{}/{}", path_to_dir, &file_name);
                             let _dir = open_dir(&format!("/{}", path_to_dir), false, Some(5))?;
                         }
@@ -331,23 +358,34 @@ fn handle_message(
 
                     match request_type {
                         BackingUp => {
+                            println!("here?");
                             let mut file = open_file(&file_path, true, Some(5))?;
                             file.append(&bytes)?;
                         }
                         RetrievingBackup => {
                             let decrypted_bytes =
-                                decrypt_data(&bytes, "password").unwrap_or_default();
+                                decrypt_data(&bytes, password_hash_temp).unwrap_or_default();
 
+                            println!("here2");
+                            println!("{}", parent_path);
                             // manually creating file if doesnt exist, since open_file(create:true) has an issue
                             let dir = open_dir(&parent_path, false, None)?;
+                            println!("here2.5");
+
                             let entries = dir.read()?;
+                            println!("here2.6");
+
                             if entries.contains(&DirEntry {
                                 path: file_path[1..].to_string(),
                                 file_type: FileType::File,
                             }) {
                             } else {
+                                println!("here2.7");
+
                                 let _file = create_file(&file_path, Some(5))?;
                             }
+
+                            println!("here3");
 
                             let mut file = open_file(&file_path, false, Some(5))?;
                             file.append(&decrypted_bytes)?;
@@ -403,9 +441,16 @@ fn init(our: Address) {
 
     // TODO size should be a hashmap of sizes for each file
     let mut size: Option<u64> = None;
+    let mut password_hash_temp: String = String::new();
 
     loop {
-        match handle_message(&our, &files_dir, &encrypted_storage_dir, &mut size) {
+        match handle_message(
+            &our,
+            &files_dir,
+            &encrypted_storage_dir,
+            &mut size,
+            &mut password_hash_temp,
+        ) {
             Ok(exit) => {
                 if exit {
                     println!(

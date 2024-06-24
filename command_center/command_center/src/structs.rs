@@ -12,6 +12,7 @@ pub enum Pkg {
 pub struct State {
     pub our: Address,
     pub config: InitialConfig,
+    pub password_hash: String,
 }
 
 impl State {
@@ -19,6 +20,7 @@ impl State {
         State {
             our: our.clone(),
             config,
+            password_hash: "".to_string(),
         }
     }
 
