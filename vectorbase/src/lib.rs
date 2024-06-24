@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use kinode_process_lib::{
-    await_message, call_init, println, Address, Message, ProcessId, Request, Response,
+    await_message, call_init, println, Address, Message, Request, Response,
 };
 use llm_interface::openai::{
     EmbeddingRequest, LLMRequest as OpenAIRequest, LLMResponse as OpenAIResponse,
@@ -106,7 +106,7 @@ fn semantic_search(
     database_name: String,
     top_k: usize,
     query: String,
-) -> anyhow::Result<Vec<(String, String)>> {
+) -> anyhow::Result<()> {
     // Vectorize the query input with openai
     let embedding_request = EmbeddingRequest {
         model: "text-embedding-3-large".to_string(),

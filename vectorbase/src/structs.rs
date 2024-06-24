@@ -1,4 +1,4 @@
-use kinode_process_lib::{get_state, set_state, Address};
+use kinode_process_lib::{get_state, set_state};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
