@@ -106,7 +106,7 @@ fn semantic_search(
     database_name: String,
     top_k: usize,
     query: String,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<Vec<(String, String)>> {
     // Vectorize the query input with openai
     let embedding_request = EmbeddingRequest {
         model: "text-embedding-3-large".to_string(),
@@ -122,19 +122,17 @@ fn semantic_search(
     };
     let query_embedding = embedding_response.embeddings[0].clone();
 
-    // Obtain all the vectors of the database by database name
-    if let Some(vec_database) = state.databases.get(&database_name) {
+    let Some(vec_database) = state.databases.get(&database_name) else {
+        return Ok(());
+    };
+    let top_results = similarity_search(vec_database, &query_embedding, top_k);
 
-    } else {
-    }
-    let vectors: Vec<Vec<f32>> = database.values().map(|element| element.embedding.clone()).collect();
-
-    // Call similarity search with proper tok k 
-
+    let response = VectorbaseResponse::SemanticSearch(top_results);
+    Response::new()
+        .body(serde_json::to_vec(&response)?)
+        .send()?;
     Ok(())
 }
-
-
 
 call_init!(init);
 fn init(our: Address) {
