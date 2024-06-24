@@ -39,6 +39,7 @@ fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()>
             let response_body = serde_json::to_vec(&response)?;
             Response::new().body(response_body).send()?;
         }
+        // TODO: Zen: Later: Should the values be sent via blob instead of body? 
         VectorbaseRequest::SubmitData {
             database_name,
             values,
@@ -53,7 +54,7 @@ fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()>
                 .send_and_await_response(30)??;
             // TODO: Zena: Entrypoint
             // response.
-            let embeddings = response.embedding;
+            let embeddings = response.embeddings;
 
             state
                 .databases
@@ -74,7 +75,7 @@ fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()>
             database_name,
             top_k,
             query,
-        } => todo!(),
+        } => {},
     }
     Ok(())
 }
