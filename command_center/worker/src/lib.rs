@@ -1,7 +1,5 @@
 use base64::{engine::general_purpose, Engine as _};
-use serde::{Deserialize, Serialize};
 use std::path::Path;
-use std::str::FromStr;
 
 use kinode_process_lib::{
     await_message, call_init, get_blob, println,
@@ -9,7 +7,7 @@ use kinode_process_lib::{
         create_file, open_dir, open_file, DirEntry, Directory, FileType, SeekFrom, VfsAction,
         VfsRequest,
     },
-    Address, Message, ProcessId, Request,
+    Address, Message, Request,
 };
 
 use files_lib::encryption::{decrypt_data, encrypt_data};
@@ -28,13 +26,6 @@ wit_bindgen::generate!({
 // const CHUNK_SIZE: u64 = 1048576; // 1MB
 const CHUNK_SIZE: u64 = 1024; // 1KB
 const ENCRYPTED_CHUNK_SIZE: u64 = CHUNK_SIZE + 44; // that's what encrypted chunks end up being
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum TransferRequest {
-    ListFiles,
-    Download { name: String, target: Address },
-    Progress { name: String, progress: u64 },
-}
 
 fn handle_message(
     our: &Address,
@@ -56,7 +47,7 @@ fn handle_message(
                     uploader_node,
                     target_worker,
                 } => {
-                    println!("file_transfer worker: got initialize request");
+                    println!("command_center worker: got initialize request");
 
                     if let Some(received_hash) = password_hash.clone() {
                         *password_hash_temp = received_hash;
@@ -352,7 +343,7 @@ fn handle_message(
                     let bytes = match blob {
                         Some(blob) => blob.bytes,
                         None => {
-                            return Err(anyhow::anyhow!("file_transfer: receive error: no blob"));
+                            return Err(anyhow::anyhow!("command_center: receive error: no blob"));
                         }
                     };
 
@@ -391,31 +382,6 @@ fn handle_message(
                             file.append(&decrypted_bytes)?;
                         }
                     }
-
-                    // if sender has sent us a size, give a progress update to main transfer!
-                    if let Some(size) = size {
-                        let progress = ((offset + length) as f64 / *size as f64 * 100.0) as u64;
-
-                        // send update to main process
-                        let main_app = Address {
-                            node: our.node.clone(),
-                            process: ProcessId::from_str(
-                                "file_transfer:file_transfer:template.os",
-                            )?,
-                        };
-
-                        Request::new()
-                            .body(serde_json::to_vec(&TransferRequest::Progress {
-                                name: file_path,
-                                progress,
-                            })?)
-                            .target(&main_app)
-                            .send()?;
-
-                        if progress >= 100 {
-                            return Ok(false);
-                        }
-                    }
                 }
                 WorkerRequest::Size(incoming_size) => {
                     *size = Some(incoming_size);
@@ -423,7 +389,7 @@ fn handle_message(
             }
         }
         _ => {
-            println!("file_transfer worker: got something else than request...");
+            println!("command_center worker: got something else than request...");
         }
     }
     Ok(false)
@@ -431,7 +397,7 @@ fn handle_message(
 
 call_init!(init);
 fn init(our: Address) {
-    println!("file_transfer worker: begin");
+    println!("command_center worker: begin");
     let start = std::time::Instant::now();
 
     let our_files_path = format!("{}/files", our.package_id());
@@ -454,14 +420,14 @@ fn init(our: Address) {
             Ok(exit) => {
                 if exit {
                     println!(
-                        "file_transfer worker: done: exiting, took {:?}",
+                        "command_center worker: done: exiting, took {:?}",
                         start.elapsed()
                     );
                     break;
                 }
             }
             Err(e) => {
-                println!("file_transfer: worker error: {:?}", e);
+                println!("command_center: worker error: {:?}", e);
             }
         };
     }

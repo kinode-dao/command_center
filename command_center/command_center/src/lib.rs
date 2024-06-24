@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use kinode_process_lib::vfs::{create_drive, DirEntry, FileType};
 use kinode_process_lib::{
-    await_message, call_init, get_blob, get_state, http, our_capabilities, println, spawn, Address,
-    Message, OnExit, Request, Response,
+    await_message, call_init, get_blob, http, our_capabilities, println, spawn, Address, Message,
+    OnExit, Request, Response,
 };
 
 use llm_interface::openai::*;
@@ -53,7 +53,7 @@ fn handle_backup_message(
                         .send_and_await_response(5)??;
                 }
                 // receiving backup request from client
-                ClientRequest::BackupRequest { size } => {
+                ClientRequest::BackupRequest { .. } => {
                     println!(
                         "got backup request from client: {:?}",
                         message.source().node,
@@ -153,18 +153,20 @@ fn handle_http_request(
             println!("fetching notes");
             fetch_notes()
         }
-        "/import_notes" => {
-            import_notes(&bytes);
-            http::send_response(
-                http::StatusCode::OK,
-                Some(HashMap::from([(
-                    "Content-Type".to_string(),
-                    "application/json".to_string(),
-                )])),
-                b"{\"message\": \"success\"}".to_vec(),
-            );
-            Ok(())
-        }
+        "/import_notes" => match import_notes(&bytes) {
+            Ok(_) => {
+                http::send_response(
+                    http::StatusCode::OK,
+                    Some(HashMap::from([(
+                        "Content-Type".to_string(),
+                        "application/json".to_string(),
+                    )])),
+                    b"{\"message\": \"success\"}".to_vec(),
+                );
+                Ok(())
+            }
+            Err(e) => Err(e),
+        },
         _ => Ok(()),
     }
 }
@@ -369,8 +371,8 @@ fn handle_message(
                     // making backup request to server
                     UiRequest::BackupRequest {
                         node_id,
-                        size,
                         password_hash,
+                        ..
                     } => {
                         *data_password_hash = password_hash.clone();
                         println!("data_password_hash: {}", data_password_hash);
