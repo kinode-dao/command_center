@@ -2407,7 +2407,7 @@ dependencies = [
 [[package]]
 name = "storage_interface"
 version = "0.1.0"
-source = "git+https://github.com/kinode-dao/command_center/?branch=storage_interface#a120c52af4c54ab33f5f52b0593552f9c57f26dc"
+source = "git+https://github.com/kinode-dao/command_center/?branch=storage_interface#c39765c88433e7417ff64f2a89d25724dc09d274"
 dependencies = [
  "serde",
  "serde_derive",

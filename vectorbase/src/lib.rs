@@ -48,23 +48,26 @@ fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()>
                 model: "text-embedding-3-large".to_string(),
                 input: values,
             };
-            let openai_request = OpenAIRequest::Embedding(embedding_request);
+            let openai_request = serde_json::to_vec(&OpenAIRequest::Embedding(embedding_request))?;
             let response = Request::to(LLM_ADDRESS)
                 .body(openai_request)
                 .send_and_await_response(30)??;
-            // TODO: Zena: Entrypoint
-            // response.
-            let embeddings = response.embeddings;
+            let OpenAIResponse::Embedding(embedding_response) = serde_json::from_slice(response.body())? else {
+                return Err(anyhow::anyhow!("Failed to parse embedding response"));
+            };
+            let embeddings = embedding_response.embeddings;
 
-            state
+            let database = state
                 .databases
                 .entry(database_name)
-                .or_insert_with(BTreeSet::new)
-                .extend(values.into_iter().enumerate().map(|(index, text)| Element {
-                    text,
-                    embedding: Some(embeddings[index].clone()),
-                }));
-
+                .or_insert_with(BTreeSet::new);
+            
+            // for (index, text) in values.into_iter().enumerate() {
+            //     database.insert(Element {
+            //         text,
+            //         embedding: embeddings[index].clone(),
+            //     });
+            // }
             state.save(); 
 
             Response::new()

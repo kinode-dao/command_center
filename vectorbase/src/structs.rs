@@ -1,17 +1,16 @@
 use kinode_process_lib::{get_state, set_state, Address};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 use std::collections::HashMap;
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct State {
-    pub databases: HashMap<String, BTreeSet<Element>>,
+    pub databases: HashMap<String, HashMap<String, Element>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Element {
     pub text: String,
-    pub embedding: Option<Vec<f32>>,
+    pub embedding: Vec<f32>,
 }
 
 impl State {
