@@ -18,5 +18,5 @@ pub enum Request {
 pub enum Response {
     ListDatabases(Vec<String>),
     SubmitData,
-    SemanticSearch(Vec<String>),
+    SemanticSearch(Vec<(String, String)>),
 }
