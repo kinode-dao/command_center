@@ -5,8 +5,7 @@ pub enum Request {
     ListDatabases,
     SubmitData {
         database_name: String,
-        entry_name: String,
-        values: Vec<String>,
+        values: Vec<(String, String)>,
     },
     SemanticSearch {
         database_name: String,
