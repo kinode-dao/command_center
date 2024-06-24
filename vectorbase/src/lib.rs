@@ -4,8 +4,10 @@ use std::str::FromStr;
 use kinode_process_lib::{
     await_message, call_init, println, Address, Message, ProcessId, Request, Response,
 };
+use llm_interface::openai::{
+    EmbeddingRequest, LLMRequest as OpenAIRequest, LLMResponse as OpenAIResponse,
+};
 use vectorbase_interface::{Request as VectorbaseRequest, Response as VectorbaseResponse};
-use llm_interface::openai::{LLMRequest as OpenAIRequest, LLMResponse as OpenAIResponse, EmbeddingRequest};
 
 mod structs;
 use structs::*;
@@ -39,9 +41,10 @@ fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()>
             let response_body = serde_json::to_vec(&response)?;
             Response::new().body(response_body).send()?;
         }
-        // TODO: Zen: Later: Should the values be sent via blob instead of body? 
+        // TODO: Zen: Later: Should the values be sent via blob instead of body?
         VectorbaseRequest::SubmitData {
             database_name,
+            entry_name,
             values,
         } => {
             let embedding_request = EmbeddingRequest {
@@ -52,7 +55,9 @@ fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()>
             let response = Request::to(LLM_ADDRESS)
                 .body(openai_request)
                 .send_and_await_response(30)??;
-            let OpenAIResponse::Embedding(embedding_response) = serde_json::from_slice(response.body())? else {
+            let OpenAIResponse::Embedding(embedding_response) =
+                serde_json::from_slice(response.body())?
+            else {
                 return Err(anyhow::anyhow!("Failed to parse embedding response"));
             };
             let embeddings = embedding_response.embeddings;
@@ -60,15 +65,18 @@ fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()>
             let database = state
                 .databases
                 .entry(database_name)
-                .or_insert_with(BTreeSet::new);
-            
-            // for (index, text) in values.into_iter().enumerate() {
-            //     database.insert(Element {
-            //         text,
-            //         embedding: embeddings[index].clone(),
-            //     });
-            // }
-            state.save(); 
+                .or_insert_with(HashMap::new);
+
+            for (index, text) in values.into_iter().enumerate() {
+                database.insert(
+                    entry_name,
+                    Element {
+                        text,
+                        embedding: embeddings[index].clone(),
+                    },
+                );
+            }
+            state.save();
 
             Response::new()
                 .body(serde_json::to_vec(&VectorbaseResponse::SubmitData)?)
@@ -78,7 +86,7 @@ fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()>
             database_name,
             top_k,
             query,
-        } => {},
+        } => {}
     }
     Ok(())
 }
