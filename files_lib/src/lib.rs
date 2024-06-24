@@ -1,23 +1,33 @@
 use kinode_process_lib::vfs::{open_dir, open_file, DirEntry, FileType, VfsAction, VfsRequest};
-use kinode_process_lib::{http, println, Address, NodeId, Request};
+use kinode_process_lib::{println, Address, NodeId, Request};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub mod encryption;
 
+// ui -> client node
 #[derive(Serialize, Deserialize, Debug)]
-pub enum ClientRequest {
-    // telling the server which data size to expect
+pub enum UiRequest {
     BackupRequest {
         node_id: NodeId,
         size: u64,
+        password_hash: String,
     },
     BackupRetrieve {
         node_id: NodeId,
-        worker_address: Address,
+        password_hash: String,
     },
 }
 
+// client node -> server node
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ClientRequest {
+    // telling the server which data size to expect
+    BackupRequest { size: u64 },
+    BackupRetrieve { worker_address: Address },
+}
+
+// server node -> client node
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ServerResponse {
     BackupResponse(BackupResponse),
@@ -32,37 +42,40 @@ pub enum BackupResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum WorkerRequest {
     Initialize {
-        uploader_node: NodeId,
+        request_type: WorkerRequestType,
+        uploader_node: Option<NodeId>,
         target_worker: Option<Address>,
+        password_hash: Option<String>,
     },
     Chunk {
+        request_type: WorkerRequestType,
         done: bool,
-        name: String,
+        file_name: String,
         offset: u64,
         length: u64,
     },
     Size(u64),
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum WorkerRequestType {
+    BackingUp,
+    RetrievingBackup,
+}
+
 // read_file -> contents
 pub fn read_file(dir: DirEntry) -> anyhow::Result<String> {
-    if dir.path.ends_with(".DS_Store")
-    // || dir.path.contains(".obsidian")
-    // || dir.path.contains(".trash")
-    {
+    if dir.path.ends_with(".DS_Store") {
         return Err(anyhow::Error::msg("Skipping .DS_Store"));
     }
-    // println!("fn read_file on: {:#?}", &dir);
     let file = open_file(&dir.path, false, Some(5));
     let contents: Vec<u8> = file?.read()?;
     let json = std::str::from_utf8(&contents).map(|s| s.to_string())?;
-    // println!("json: {:#?}", &json);
     Ok(json)
 }
 
 // read files -> map path contents
 pub fn read_files(dirs: Vec<DirEntry>) -> anyhow::Result<HashMap<String, String>> {
-    // println!("fn read_files on: {:#?}", &dirs);
     let mut files = HashMap::new();
     for dir in dirs {
         let content = read_file(DirEntry {
@@ -97,7 +110,6 @@ pub fn read_dir(dir: DirEntry) -> anyhow::Result<Vec<DirEntry>> {
 
 // read nested dir -> map path contents
 pub fn read_nested_dir(dir: DirEntry) -> anyhow::Result<HashMap<String, String>> {
-    // println!("fn read_nested_dir on: {:#?}", &dir);
     //  read dir -> list of paths
     let entries = read_dir(dir)?;
     //  split files from dirs
@@ -120,7 +132,6 @@ pub fn read_nested_dir(dir: DirEntry) -> anyhow::Result<HashMap<String, String>>
 
 // read nested dir -> map path empty_contents
 pub fn read_nested_dir_light(dir: DirEntry) -> anyhow::Result<HashMap<String, String>> {
-    // println!("fn read_nested_dir on: {:#?}", &dir);
     //  read dir -> list of paths
     let entries = read_dir(dir)?;
     //  split files from dirs
@@ -142,19 +153,14 @@ pub fn read_nested_dir_light(dir: DirEntry) -> anyhow::Result<HashMap<String, St
 }
 
 pub fn import_notes(body_bytes: &[u8]) -> anyhow::Result<()> {
-    println!("IMPORTING NOTES");
     let directory: HashMap<String, String> =
         serde_json::from_slice::<HashMap<String, String>>(body_bytes)?;
 
     let mut dirs_created: Vec<String> = Vec::new();
 
     for (file_path, content) in directory.iter() {
-        // println!("file_path: {:?}", &file_path);
-
         let drive_path: &str = "/command_center:appattacc.os/files";
         let full_file_path = format!("{}/{}", drive_path, file_path);
-
-        // println!("file_path: {:?}", &full_file_path);
 
         let mut split_path: Vec<&str> = full_file_path
             .split("/")
@@ -162,7 +168,6 @@ pub fn import_notes(body_bytes: &[u8]) -> anyhow::Result<()> {
             .collect::<Vec<&str>>();
         split_path.pop();
         let dir_path = split_path.join("/");
-        // println!("dir_path: {:?}", dir_path);
 
         // not perfect, i.e. it will run create /this/dir even if /this/dir/here/ exists
         // because it doesnt check was already created when /this/dir/here was created
@@ -180,7 +185,6 @@ pub fn import_notes(body_bytes: &[u8]) -> anyhow::Result<()> {
 
         dirs_created.push(dir_path);
 
-        // println!("creating file at {:?}", &full_file_path);
         let file = open_file(&full_file_path, true, Some(5))?;
 
         // println!("write content to file");
