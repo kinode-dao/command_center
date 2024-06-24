@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use kinode_process_lib::{
     await_message, call_init, println, Address, Message, ProcessId, Request, Response,
@@ -11,6 +10,9 @@ use vectorbase_interface::{Request as VectorbaseRequest, Response as VectorbaseR
 
 mod structs;
 use structs::*;
+
+mod similarity_search;
+use similarity_search::similarity_search;
 
 wit_bindgen::generate!({
     path: "target/wit",
@@ -35,65 +37,108 @@ fn handle_message(our: &Address, state: &mut State) -> anyhow::Result<()> {
 fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()> {
     let request = serde_json::from_slice::<VectorbaseRequest>(body)?;
     match request {
-        VectorbaseRequest::ListDatabases => {
-            let database_names: Vec<String> = state.databases.keys().cloned().collect();
-            let response = VectorbaseResponse::ListDatabases(database_names);
-            let response_body = serde_json::to_vec(&response)?;
-            Response::new().body(response_body).send()?;
-        }
-        // TODO: Zen: Later: Should the values be sent via blob instead of body?
+        VectorbaseRequest::ListDatabases => list_databases(state),
         VectorbaseRequest::SubmitData {
             database_name,
-            entry_name,
             values,
-        } => {
-            let embedding_request = EmbeddingRequest {
-                model: "text-embedding-3-large".to_string(),
-                input: values,
-            };
-            let openai_request = serde_json::to_vec(&OpenAIRequest::Embedding(embedding_request))?;
-            let response = Request::to(LLM_ADDRESS)
-                .body(openai_request)
-                .send_and_await_response(30)??;
-            let OpenAIResponse::Embedding(embedding_response) =
-                serde_json::from_slice(response.body())?
-            else {
-                return Err(anyhow::anyhow!("Failed to parse embedding response"));
-            };
-            let embeddings = embedding_response.embeddings;
-
-            let database = state
-                .databases
-                .entry(database_name)
-                .or_insert_with(HashMap::new);
-
-            for (index, text) in values.into_iter().enumerate() {
-                database.insert(
-                    entry_name,
-                    Element {
-                        text,
-                        embedding: embeddings[index].clone(),
-                    },
-                );
-            }
-            state.save();
-
-            Response::new()
-                .body(serde_json::to_vec(&VectorbaseResponse::SubmitData)?)
-                .send()?;
-        }
+        } => submit_data(state, database_name, values),
         VectorbaseRequest::SemanticSearch {
             database_name,
             top_k,
             query,
-        } => {}
+        } => semantic_search(state, database_name, top_k, query),
     }
+}
+
+fn list_databases(state: &State) -> anyhow::Result<()> {
+    let database_names: Vec<String> = state.databases.keys().cloned().collect();
+    let response = VectorbaseResponse::ListDatabases(database_names);
+    let response_body = serde_json::to_vec(&response)?;
+    Response::new().body(response_body).send()?;
     Ok(())
 }
 
+fn submit_data(
+    state: &mut State,
+    database_name: String,
+    values: Vec<(String, String)>,
+) -> anyhow::Result<()> {
+    let texts: Vec<String> = values.iter().map(|(_, text)| text.clone()).collect();
+    let embedding_request = EmbeddingRequest {
+        model: "text-embedding-3-large".to_string(),
+        input: texts,
+    };
+    let openai_request = serde_json::to_vec(&OpenAIRequest::Embedding(embedding_request))?;
+    let response = Request::to(LLM_ADDRESS)
+        .body(openai_request)
+        .send_and_await_response(30)??;
+    let OpenAIResponse::Embedding(embedding_response) = serde_json::from_slice(response.body())?
+    else {
+        return Err(anyhow::anyhow!("Failed to parse embedding response"));
+    };
+    let embeddings = embedding_response.embeddings;
+
+    let database = state
+        .databases
+        .entry(database_name)
+        .or_insert_with(HashMap::new);
+
+    for (index, (entry_name, text)) in values.into_iter().enumerate() {
+        database.insert(
+            entry_name,
+            Element {
+                text,
+                embedding: embeddings[index].clone(),
+            },
+        );
+    }
+    state.save();
+
+    Response::new()
+        .body(serde_json::to_vec(&VectorbaseResponse::SubmitData)?)
+        .send()?;
+
+    Ok(())
+}
+
+fn semantic_search(
+    state: &mut State,
+    database_name: String,
+    top_k: usize,
+    query: String,
+) -> anyhow::Result<()> {
+    // Vectorize the query input with openai
+    let embedding_request = EmbeddingRequest {
+        model: "text-embedding-3-large".to_string(),
+        input: vec![query.clone()],
+    };
+    let openai_request = serde_json::to_vec(&OpenAIRequest::Embedding(embedding_request))?;
+    let response = Request::to(LLM_ADDRESS)
+        .body(openai_request)
+        .send_and_await_response(30)??;
+    let OpenAIResponse::Embedding(embedding_response) = serde_json::from_slice(response.body())?
+    else {
+        return Err(anyhow::anyhow!("Failed to parse embedding response"));
+    };
+    let query_embedding = embedding_response.embeddings[0].clone();
+
+    // Obtain all the vectors of the database by database name
+    if let Some(vec_database) = state.databases.get(&database_name) {
+
+    } else {
+    }
+    let vectors: Vec<Vec<f32>> = database.values().map(|element| element.embedding.clone()).collect();
+
+    // Call similarity search with proper tok k 
+
+    Ok(())
+}
+
+
+
 call_init!(init);
 fn init(our: Address) {
-    println!("begin");
+    println!("Begin: {:?}", our.process.process_name);
 
     let mut state = State::fetch().unwrap_or_default();
 

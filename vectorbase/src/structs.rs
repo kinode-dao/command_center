@@ -7,7 +7,7 @@ pub struct State {
     pub databases: HashMap<String, HashMap<String, Element>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct Element {
     pub text: String,
     pub embedding: Vec<f32>,

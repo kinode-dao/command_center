@@ -2851,7 +2851,7 @@ dependencies = [
 [[package]]
 name = "vectorbase_interface"
 version = "0.1.0"
-source = "git+https://github.com/kinode-dao/command_center?branch=vectorbase_interface#7b9dfcc0f2f244da62f10f4b01c583df8841d383"
+source = "git+https://github.com/kinode-dao/command_center?branch=vectorbase_interface#b56ebdc071d35d3d0bc02f78bdd39caa46b07f95"
 dependencies = [
  "serde",
  "serde_derive",

@@ -109,5 +109,21 @@
             "http_server:distro:sys"
         ],
         "public": true
+    },
+    {
+        "process_name": "vectorbase",
+        "process_wasm_path": "/vectorbase.wasm",
+        "on_exit": "Restart",
+        "request_networking": true,
+        "request_capabilities": [
+            "main:command_center:appattacc.os",
+            "vfs:distro:sys",
+            "openai:command_center:appattacc.os"
+        ],
+        "grant_capabilities": [
+            "main:command_center:appattacc.os"
+        ],
+        "public": true
     }
+
 ]
