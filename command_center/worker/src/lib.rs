@@ -54,8 +54,7 @@ fn handle_message(
                     uploader_node,
                     target_worker,
                 } => {
-                    // println!("file_transfer worker: got initialize request");
-                    // println!("uploader_node: {}", uploader_node);
+                    println!("file_transfer worker: got initialize request");
 
                     let chunk_size = match request_type {
                         BackingUp => CHUNK_SIZE,
@@ -85,14 +84,14 @@ fn handle_message(
                                     }
                                 }
                             };
-                            // println!("dir_entry: {:?}", dir_entry);
+
                             // outputs map path contents, a flattened version of the nested dir
                             let dir = read_nested_dir_light(dir_entry)?;
 
-                            // send each file in the folder
+                            // send each file in the folder to the server
                             for path in dir.keys() {
                                 // open/create empty file
-                                let mut active_file = open_file(path, true, Some(5))?;
+                                let mut active_file = open_file(path, false, Some(5))?;
 
                                 // we have a target, chunk the data, and send it.
                                 let size = active_file.metadata()?.len;
@@ -103,38 +102,40 @@ fn handle_message(
                                     .target(target_worker.clone())
                                     .send()?;
 
-                                let mut new_path = String::new();
+                                let mut file_name = String::new();
                                 let _pos = active_file.seek(SeekFrom::Start(0))?;
 
-                                // setting the right path
                                 match request_type {
+                                    // path: e.g. command_center:appattacc.os/files/Obsidian Vault/file.md
+                                    // file_name in request:
+                                    // GAXPVM7gDutxI3DnsFfhYk5H8vsuYPR1HIXLjJIpFcp4Ip_iXhl7u3voPX_uerfadAldI3PAKVYr0TpPk7qTndv3adGSGWMp9GLUuxPdOLUt84zyETiFgdm2kyYA0pihtLlOiu_E3A==
                                     BackingUp => {
+                                        // encrypt file name
                                         let prefix = "command_center:appattacc.os/files/";
                                         if path.starts_with(prefix) {
-                                            let extracted_path = &path[..prefix.len()];
                                             let rest_of_path = &path[prefix.len()..];
-                                            // println!("Extracted path: {}", extracted_path);
-                                            // println!("Rest of path: {}", rest_of_path);
                                             let encrypted_vec =
                                                 &encrypt_data(rest_of_path.as_bytes(), "password");
                                             let rest_of_path =
                                                 general_purpose::URL_SAFE.encode(&encrypted_vec);
-                                            new_path =
-                                                format!("{}{}", extracted_path, &rest_of_path);
+                                            file_name = rest_of_path;
                                         } else {
                                             return Err(anyhow::anyhow!(
                                                 "Path does not start with the expected prefix"
                                             ));
                                         }
                                     }
+                                    // path: e.g. command_center:appattacc.os/encrypted_storage/node-name.os/GAXPVM7gDutxI3DnsFfhYk5H8vsuYPR1HIXLjJIpFcp4Ip_iXhl7u3voPX_uerfadAldI3PAKVYr0TpPk7qTndv3adGSGWMp9GLUuxPdOLUt84zyETiFgdm2kyYA0pihtLlOiu_E3A.md
+                                    // file_name in request:
+                                    // GAXPVM7gDutxI3DnsFfhYk5H8vsuYPR1HIXLjJIpFcp4Ip_iXhl7u3voPX_uerfadAldI3PAKVYr0TpPk7qTndv3adGSGWMp9GLUuxPdOLUt84zyETiFgdm2kyYA0pihtLlOiu_E3A==
                                     RetrievingBackup => {
                                         let path = Path::new(path);
-                                        new_path = format!(
-                                            "{}/{}",
-                                            "command_center:appattacc.os/files/",
-                                            path.file_name().unwrap().to_str().unwrap()
-                                        );
-                                        // println!("new_path: {}", new_path);
+                                        file_name = path
+                                            .file_name()
+                                            .unwrap_or_default()
+                                            .to_str()
+                                            .unwrap_or_default()
+                                            .to_string();
                                     }
                                 };
 
@@ -150,29 +151,17 @@ fn handle_message(
                                         for i in 0..num_chunks {
                                             let offset = i * chunk_size;
                                             let length = chunk_size.min(size - offset); // size=file size
-                                                                                        // println!("offset: {}", offset);
-                                                                                        // println!("length: {}", length);
                                             let mut buffer = vec![0; length as usize];
-                                            // println!("buffer: {:?}", buffer.len());
-                                            let pos = active_file.seek(SeekFrom::Current(0))?;
-                                            // println!("pos: {}", pos);
+                                            let _pos = active_file.seek(SeekFrom::Current(0))?;
                                             active_file.read_at(&mut buffer)?;
-                                            // println!("buffer: {:?}", buffer);
                                             let buffer = encrypt_data(&buffer, "password");
-                                            // println!(
-                                            //     "encrypted_buffer first 5: {:?}, last 5: {:?}",
-                                            //     &buffer[..5.min(buffer.len())],
-                                            //     &buffer[buffer.len().saturating_sub(5)..]
-                                            // );
 
                                             let encrypted_length = buffer.len() as u64;
-                                            // println!("encrypted_length: {}", encrypted_length);
-                                            // println!("encrypted_offset: {}", encrypted_offset);
 
                                             Request::new()
                                                 .body(serde_json::to_vec(&WorkerRequest::Chunk {
                                                     request_type: request_type.clone(),
-                                                    name: new_path.clone(),
+                                                    file_name: file_name.clone(),
                                                     offset: encrypted_offset,
                                                     length: encrypted_length,
                                                     done: false,
@@ -184,34 +173,22 @@ fn handle_message(
                                         }
                                     }
                                     RetrievingBackup => {
-                                        // println!("OFFSET SUX HERE");
-                                        // buffer size is consistent, so easy
+                                        // buffer size is consistent
                                         let num_chunks =
                                             (size as f64 / chunk_size as f64).ceil() as u64;
 
                                         for i in 0..num_chunks {
-                                            // println!("OFFSET SUX HERE");
-
                                             let offset = i * chunk_size;
                                             let length = chunk_size.min(size - offset);
 
-                                            // println!("offset: {}", offset);
-                                            // println!("length: {}", length);
                                             let mut buffer = vec![0; length as usize];
-                                            let pos = active_file.seek(SeekFrom::Current(0))?;
-                                            // println!("pos: {}", pos);
+                                            let _pos = active_file.seek(SeekFrom::Current(0))?;
                                             active_file.read_at(&mut buffer)?;
-                                            // println!("name: {}", new_path.clone());
-                                            // println!(
-                                            //     "encrypted_buffer first 5: {:?}, last 5: {:?}",
-                                            //     &buffer[..5.min(buffer.len())],
-                                            //     &buffer[buffer.len().saturating_sub(5)..]
-                                            // );
 
                                             Request::new()
                                                 .body(serde_json::to_vec(&WorkerRequest::Chunk {
                                                     request_type: request_type.clone(),
-                                                    name: new_path.clone(),
+                                                    file_name: file_name.clone(),
                                                     offset,
                                                     length,
                                                     done: false,
@@ -223,11 +200,11 @@ fn handle_message(
                                     }
                                 }
                             }
-                            // println!("sent everything");
+                            println!("worker: sent everything");
                             Request::new()
                                 .body(serde_json::to_vec(&WorkerRequest::Chunk {
                                     request_type,
-                                    name: "".to_string(),
+                                    file_name: "".to_string(),
                                     offset: 0,
                                     length: 0,
                                     done: true,
@@ -235,7 +212,6 @@ fn handle_message(
                                 .target(target_worker.clone())
                                 .send()?;
 
-                            println!("returning true");
                             return Ok(true);
                         }
                         // start receiving data
@@ -251,7 +227,6 @@ fn handle_message(
                                     full_path = files_dir.path.clone();
                                 }
                             }
-                            println!("REMOVING: {}", full_path);
                             let request: VfsRequest = VfsRequest {
                                 path: full_path.to_string(),
                                 action: VfsAction::RemoveDirAll,
@@ -278,13 +253,12 @@ fn handle_message(
                 // someone sending a chunk to us!
                 WorkerRequest::Chunk {
                     request_type,
-                    name,
+                    file_name,
                     offset,
                     length,
                     done,
                 } => {
                     if done == true {
-                        println!("returning true");
                         return Ok(true);
                     }
                     let blob = get_blob();
@@ -312,11 +286,7 @@ fn handle_message(
                             path_to_dir = files_dir.path.clone();
                         }
                     }
-                    // println!("!!path to dir: {}", path_to_dir);
-                    // this feels redundant, but i had problems with open_file(create: true);
-                    let path = Path::new(name.as_str());
-                    let file_name = path.file_name().unwrap().to_str().unwrap();
-                    // println!("!!file_name: {}", file_name);
+
                     let mut parent_path = String::new();
                     let mut file_path = String::new();
                     match request_type {
@@ -330,14 +300,10 @@ fn handle_message(
 
                             file_path = format!("/{}/{}", path_to_dir, decrypted_path);
                             parent_path = Path::new(&file_path)
-                                .parent() // Get the parent directory as an Option<&Path>
-                                .and_then(|p| p.to_str()) // Convert the Path to a str slice if possible
+                                .parent()
+                                .and_then(|p| p.to_str())
                                 .unwrap_or("")
-                                .to_string(); // Provide a default empty string if no parent is found
-                            let file_name = Path::new(&file_path)
-                                .file_name() // Get the file name as an Option<&OsStr>
-                                .and_then(|f| f.to_str()) // Convert the OsStr to a str slice if possible
-                                .unwrap_or(""); // Provide a default empty string if no file name is found
+                                .to_string();
 
                             let request = VfsRequest {
                                 path: format!("/{}", parent_path).to_string(),
@@ -348,88 +314,43 @@ fn handle_message(
                                 .body(serde_json::to_vec(&request)?)
                                 .send_and_await_response(5)?;
 
-                            // println!("opening dir at: {}", parent_path);
                             let _dir = open_dir(&parent_path, false, Some(5))?;
                         }
                         BackingUp => {
                             file_path = format!("/{}/{}", path_to_dir, &file_name);
-                            // println!("opening dir at: {}", format!("/{}", path_to_dir));
                             let _dir = open_dir(&format!("/{}", path_to_dir), false, Some(5))?;
                         }
                     }
 
-                    // println!("file_path: {}", file_path);
                     let bytes = match blob {
                         Some(blob) => blob.bytes,
                         None => {
                             return Err(anyhow::anyhow!("file_transfer: receive error: no blob"));
                         }
                     };
-                    // println!("bytes length: {}", bytes.len());
 
                     match request_type {
                         BackingUp => {
-                            // println!("backing up writing");
-                            // println!("offset: {}", offset);
-                            // println!("length: {}", length);
-                            // println!("pos: {}", pos);
-                            // println!("bytes: {:?}", bytes.len());
-                            // println!(
-                            //     "bytes first 5: {:?}, last 5: {:?}",
-                            //     &bytes[..5.min(bytes.len())],
-                            //     &bytes[bytes.len().saturating_sub(5)..]
-                            // );
-                            // println!("file_path: {}", file_path);
                             let mut file = open_file(&file_path, true, Some(5))?;
-                            let read = file.read()?;
-                            // println!("read1: {:?}", read.len());
                             file.append(&bytes)?;
-                            let read = file.read()?;
-                            // println!("read2: {:?}", read.len());
                         }
                         RetrievingBackup => {
-                            // println!("length: {}", length);
-
-                            // println!("bytes: {:?}", bytes.len());
-                            // println!("offset: {}", offset);
-
-                            // println!("pos: {}", pos);
-
                             let decrypted_bytes =
                                 decrypt_data(&bytes, "password").unwrap_or_default();
-                            // println!("decrypted bytes: {:?}", decrypted_bytes.len());
-                            // println!(
-                            //     "decrypted_bytes first 5: {:?}, last 5: {:?}",
-                            //     &decrypted_bytes[..3.min(decrypted_bytes.len())],
-                            //     &decrypted_bytes[decrypted_bytes.len().saturating_sub(3)..]
-                            // );
 
-                            println!("just before opening a file");
-
+                            // manually creating file if doesnt exist, since open_file(create:true) has an issue
                             let dir = open_dir(&parent_path, false, None)?;
                             let entries = dir.read()?;
-                            println!(
-                                "last two entries: {:#?}",
-                                entries.iter().rev().take(2).collect::<Vec<&DirEntry>>()
-                            );
-                            println!("file path: {}", file_path);
                             if entries.contains(&DirEntry {
                                 path: file_path[1..].to_string(),
                                 file_type: FileType::File,
                             }) {
-                                println!("not creating file");
                             } else {
-                                println!("creating file");
                                 let _file = create_file(&file_path, Some(5))?;
                             }
 
                             let mut file = open_file(&file_path, false, Some(5))?;
-                            let read: Vec<u8> = file.read()?;
-                            println!("read file: {:?}", read.len());
                             file.append(&decrypted_bytes)?;
-                            println!("appended");
-                            // let read = file.read()?;
-                            // println!("read: {:?}", read.len());
                         }
                     }
 
