@@ -10,22 +10,16 @@ use kinode_process_lib::{
     Address, Message, Request,
 };
 
-use files_lib::encryption::{decrypt_data, encrypt_data};
+use files_lib::encryption::encrypt_data;
 use files_lib::{
     read_nested_dir_light, WorkerRequest, WorkerRequestType::BackingUp,
-    WorkerRequestType::RetrievingBackup,
+    WorkerRequestType::RetrievingBackup, CHUNK_SIZE,
 };
 
 wit_bindgen::generate!({
     path: "target/wit",
     world: "process-v0",
 });
-
-// when building, test with smaller chunk size, because most text files are less
-// than this, so you won't see if it's working properly.
-// const CHUNK_SIZE: u64 = 1048576; // 1MB
-const CHUNK_SIZE: u64 = 1024; // 1KB
-const ENCRYPTED_CHUNK_SIZE: u64 = CHUNK_SIZE + 44; // that's what encrypted chunks end up being
 
 fn handle_message(
     our: &Address,
@@ -266,122 +260,6 @@ fn handle_message(
                     done,
                 } => {
                     if done == true {
-                        if let BackingUp = request_type {
-                            return Ok(true);
-                        }
-                        // !!decryption here, then isolate into a function
-                        let dir_entry: DirEntry =
-                            // /command_center:appattacc.os/retrieved_encrypted_backup
-                            DirEntry {
-                                path: retrieved_encrypted_backup_dir.path.clone(),
-                                file_type: FileType::Directory,
-                            };
-
-                        let request: VfsRequest = VfsRequest {
-                            path: "command_center:appattacc.os/files".to_string(),
-                            action: VfsAction::RemoveDirAll,
-                        };
-                        let _message = Request::new()
-                            .target(("our", "vfs", "distro", "sys"))
-                            .body(serde_json::to_vec(&request)?)
-                            .send_and_await_response(5)?;
-
-                        let request: VfsRequest = VfsRequest {
-                            path: "command_center:appattacc.os/files".to_string(),
-                            action: VfsAction::CreateDirAll,
-                        };
-                        let _message = Request::new()
-                            .target(("our", "vfs", "distro", "sys"))
-                            .body(serde_json::to_vec(&request)?)
-                            .send_and_await_response(5)?;
-
-                        let dir = read_nested_dir_light(dir_entry)?;
-                        // decrypt each file
-                        for path in dir.keys() {
-                            // open/create empty file
-                            let mut active_file = open_file(path, false, Some(5))?;
-
-                            // chunk the data
-                            let size = active_file.metadata()?.len;
-
-                            let mut file_name = String::new();
-                            let _pos = active_file.seek(SeekFrom::Start(0))?;
-
-                            // path: e.g. command_center:appattacc.os/retrieved_encrypted_backup/GAXPVM7gDutxI3DnsFfhYk5H8vsuYPR1HIXLjJIpFcp4Ip_iXhl7u3voPX_uerfadAldI3PAKVYr0TpPk7qTndv3adGSGWMp9GLUuxPdOLUt84zyETiFgdm2kyYA0pihtLlOiu_E3A.md
-                            let path = Path::new(path);
-                            file_name = path
-                                .file_name()
-                                .unwrap_or_default()
-                                .to_str()
-                                .unwrap_or_default()
-                                .to_string();
-
-                            println!("file name pre decryption: {}", file_name);
-                            // !! file name decryption
-                            let decoded_vec = general_purpose::URL_SAFE.decode(&file_name)?;
-                            let decrypted_vec =
-                                decrypt_data(&decoded_vec, password_hash_temp).unwrap_or_default();
-                            let decrypted_path = String::from_utf8(decrypted_vec).map_err(|e| {
-                                anyhow::anyhow!("Failed to convert bytes to string: {}", e)
-                            })?;
-                            let file_path = format!("/{}/{}", files_dir.path, decrypted_path);
-                            let parent_path = Path::new(&file_path)
-                                .parent()
-                                .and_then(|p| p.to_str())
-                                .unwrap_or("")
-                                .to_string();
-                            let request = VfsRequest {
-                                path: format!("/{}", parent_path).to_string(),
-                                action: VfsAction::CreateDirAll,
-                            };
-                            let _message = Request::new()
-                                .target(("our", "vfs", "distro", "sys"))
-                                .body(serde_json::to_vec(&request)?)
-                                .send_and_await_response(5)?;
-                            let _dir = open_dir(&parent_path, false, Some(5))?;
-                            println!("parent path created: {}", parent_path);
-
-                            // chunking and decrypting
-                            // have to deal with encryption change the length of buffer
-                            // hence offset needs to be accumulated and length of each chunk sent can change
-                            let num_chunks =
-                                (size as f64 / ENCRYPTED_CHUNK_SIZE as f64).ceil() as u64;
-
-                            //     println!("here?3");
-
-                            for i in 0..num_chunks {
-                                let offset = i * ENCRYPTED_CHUNK_SIZE;
-                                let length = ENCRYPTED_CHUNK_SIZE.min(size - offset); // size=file size
-                                let mut buffer = vec![0; length as usize];
-                                let _pos = active_file.seek(SeekFrom::Current(0))?;
-                                active_file.read_at(&mut buffer)?;
-                                println!("here?4");
-
-                                // !! decrypting data
-                                let decrypted_bytes =
-                                    decrypt_data(&buffer, password_hash_temp).unwrap_or_default();
-                                let dir = open_dir(&parent_path, false, None)?;
-                                println!("here2.5");
-
-                                let entries = dir.read()?;
-                                println!("here2.6");
-
-                                if entries.contains(&DirEntry {
-                                    path: file_path[1..].to_string(),
-                                    file_type: FileType::File,
-                                }) {
-                                } else {
-                                    println!("here2.7");
-
-                                    let _file = create_file(&file_path, Some(5))?;
-                                }
-
-                                println!("here3");
-
-                                let mut file = open_file(&file_path, false, Some(5))?;
-                                file.append(&decrypted_bytes)?;
-                            }
-                        }
                         return Ok(true);
                     }
                     let blob = get_blob();
