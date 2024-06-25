@@ -15,7 +15,6 @@ pub enum UiRequest {
     },
     BackupRetrieve {
         node_id: NodeId,
-        password_hash: String,
     },
     Decrypt {
         password_hash: String,
