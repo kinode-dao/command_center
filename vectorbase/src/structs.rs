@@ -10,7 +10,7 @@ pub struct State {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct Element {
     pub text: String,
-    pub embedding: Vec<f32>,
+    pub embedding: Option<Vec<f32>>,
 }
 
 impl State {

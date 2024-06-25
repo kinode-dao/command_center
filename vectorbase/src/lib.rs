@@ -63,32 +63,17 @@ fn submit_data(
     database_name: String,
     values: Vec<(String, String)>,
 ) -> anyhow::Result<()> {
-    let texts: Vec<String> = values.iter().map(|(_, text)| text.clone()).collect();
-    let embedding_request = EmbeddingRequest {
-        model: "text-embedding-3-large".to_string(),
-        input: texts,
-    };
-    let openai_request = serde_json::to_vec(&OpenAIRequest::Embedding(embedding_request))?;
-    let response = Request::to(LLM_ADDRESS)
-        .body(openai_request)
-        .send_and_await_response(30)??;
-    let OpenAIResponse::Embedding(embedding_response) = serde_json::from_slice(response.body())?
-    else {
-        return Err(anyhow::anyhow!("Failed to parse embedding response"));
-    };
-    let embeddings = embedding_response.embeddings;
-
     let database = state
         .databases
         .entry(database_name)
         .or_insert_with(HashMap::new);
 
-    for (index, (entry_name, text)) in values.into_iter().enumerate() {
+    for (entry_name, text) in values {
         database.insert(
             entry_name,
             Element {
                 text,
-                embedding: embeddings[index].clone(),
+                embedding: None,
             },
         );
     }
@@ -101,16 +86,10 @@ fn submit_data(
     Ok(())
 }
 
-fn semantic_search(
-    state: &mut State,
-    database_name: String,
-    top_k: usize,
-    query: String,
-) -> anyhow::Result<()> {
-    // Vectorize the query input with openai
+fn get_embeddings(texts: Vec<String>) -> anyhow::Result<Vec<Vec<f32>>> {
     let embedding_request = EmbeddingRequest {
         model: "text-embedding-3-large".to_string(),
-        input: vec![query.clone()],
+        input: texts,
     };
     let openai_request = serde_json::to_vec(&OpenAIRequest::Embedding(embedding_request))?;
     let response = Request::to(LLM_ADDRESS)
@@ -120,7 +99,48 @@ fn semantic_search(
     else {
         return Err(anyhow::anyhow!("Failed to parse embedding response"));
     };
-    let query_embedding = embedding_response.embeddings[0].clone();
+    Ok(embedding_response.embeddings)
+}
+
+fn update_embeddings(state: &mut State, database_name: &str) -> anyhow::Result<()> {
+    let Some(database) = state.databases.get_mut(database_name) else {
+        return Err(anyhow::anyhow!("Database not found"));
+    };
+
+    let mut texts_to_embed = Vec::new();
+    let mut elements_to_update = Vec::new();
+
+    for (entry_name, element) in database.iter_mut() {
+        if element.embedding.is_none() {
+            texts_to_embed.push(element.text.clone());
+            elements_to_update.push(entry_name.clone());
+        }
+    }
+
+    if !texts_to_embed.is_empty() {
+        let embeddings = get_embeddings(texts_to_embed)?;
+
+        for (entry_name, embedding) in elements_to_update.into_iter().zip(embeddings) {
+            if let Some(element) = database.get_mut(&entry_name) {
+                element.embedding = Some(embedding);
+            }
+        }
+
+        state.save();
+    }
+
+    Ok(())
+}
+
+
+fn semantic_search(
+    state: &mut State,
+    database_name: String,
+    top_k: usize,
+    query: String,
+) -> anyhow::Result<()> {
+    update_embeddings(state, &database_name)?;
+    let query_embedding = get_embeddings(vec![query.clone()])?[0].clone();
 
     let Some(vec_database) = state.databases.get(&database_name) else {
         Response::new()

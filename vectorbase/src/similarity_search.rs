@@ -16,7 +16,7 @@ pub fn similarity_search(
     let mut similarities: Vec<(f32, &String, &Element)> = database
         .iter()
         .map(|(key, element)| {
-            (cosine_similarity(query_embedding, &element.embedding), key, element)
+            (cosine_similarity(query_embedding, &element.embedding.as_ref().unwrap()), key, element)
         })
         .collect();
 
