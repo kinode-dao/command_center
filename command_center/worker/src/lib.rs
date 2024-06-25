@@ -68,7 +68,7 @@ fn handle_message(
                                     }
                                 }
                             };
-                            println!("dir_entry: {:?}", dir_entry);
+                            // println!("dir_entry: {:?}", dir_entry);
                             // outputs map path contents, a flattened version of the nested dir
                             let dir = read_nested_dir_light(dir_entry)?;
 
@@ -79,7 +79,7 @@ fn handle_message(
 
                                 // we have a target, chunk the data, and send it.
                                 let size = active_file.metadata()?.len;
-                                println!("path: {}", path);
+                                // println!("path: {}", path);
 
                                 let mut file_name = String::new();
                                 let _pos = active_file.seek(SeekFrom::Start(0))?;
@@ -89,7 +89,7 @@ fn handle_message(
                                     // file_name in request:
                                     // GAXPVM7gDutxI3DnsFfhYk5H8vsuYPR1HIXLjJIpFcp4Ip_iXhl7u3voPX_uerfadAldI3PAKVYr0TpPk7qTndv3adGSGWMp9GLUuxPdOLUt84zyETiFgdm2kyYA0pihtLlOiu_E3A==
                                     BackingUp => {
-                                        println!("encrypting file name");
+                                        // println!("encrypting file name");
                                         // encrypt file name
                                         let prefix = "command_center:appattacc.os/files/";
                                         if path.starts_with(prefix) {
@@ -238,15 +238,15 @@ fn handle_message(
                     let mut file_path = String::new();
                     match request_type {
                         BackingUp => {
-                            println!("here?1");
+                            // println!("here?1");
 
                             file_path = format!("/{}/{}", path_to_dir, &file_name);
-                            println!("file_path: {}", file_path);
+                            // println!("file_path: {}", file_path);
                             let _dir = open_dir(&format!("/{}", path_to_dir), false, Some(5))?;
                         }
                         RetrievingBackup => {
                             file_path = format!("/{}/{}", path_to_dir, &file_name);
-                            println!("full path: {}", file_path);
+                            // println!("full path: {}", file_path);
                             let request = VfsRequest {
                                 path: format!("/{}", path_to_dir).to_string(),
                                 action: VfsAction::CreateDirAll,
@@ -256,7 +256,7 @@ fn handle_message(
                                 .body(serde_json::to_vec(&request)?)
                                 .send_and_await_response(5)?;
 
-                            println!("here1");
+                            // println!("here1");
 
                             let _dir = open_dir(&path_to_dir, false, Some(5))?;
                         }
@@ -272,33 +272,33 @@ fn handle_message(
                     match request_type {
                         BackingUp => {
                             let mut file = open_file(&file_path, true, Some(5))?;
-                            println!("file_path: {}", file.path);
-                            println!(
-                                "first 2 bytes: {:?}, last 2 bytes: {:?}",
-                                bytes.get(0..2),
-                                bytes.get(bytes.len().saturating_sub(2)..)
-                            );
+                            // println!("file_path: {}", file.path);
+                            // println!(
+                            //     "first 2 bytes: {:?}, last 2 bytes: {:?}",
+                            //     bytes.get(0..2),
+                            //     bytes.get(bytes.len().saturating_sub(2)..)
+                            // );
                             file.append(&bytes)?;
                         }
                         RetrievingBackup => {
                             // manually creating file if doesnt exist, since open_file(create:true) has an issue
                             let dir = open_dir(&path_to_dir, false, None)?;
-                            println!("here2.5");
+                            // println!("here2.5");
 
                             let entries = dir.read()?;
-                            println!("here2.6");
+                            // println!("here2.6");
 
                             if entries.contains(&DirEntry {
                                 path: file_path[1..].to_string(),
                                 file_type: FileType::File,
                             }) {
                             } else {
-                                println!("here2.7");
+                                // println!("here2.7");
 
                                 let _file = create_file(&file_path, Some(5))?;
                             }
 
-                            println!("here3");
+                            // println!("here3");
 
                             let mut file = open_file(&file_path, false, Some(5))?;
                             file.append(&bytes)?;

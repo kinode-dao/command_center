@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use kinode_process_lib::{Address, NodeId};
 use serde::{Deserialize, Serialize};
 
@@ -28,11 +29,12 @@ pub enum ClientRequest {
 // server node -> client node
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ServerResponse {
-    BackupResponse(BackupResponse),
+    BackupRequestResponse(BackupRequestResponse),
+    BackupRetrieveResponse(DateTime<Utc>),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum BackupResponse {
+pub enum BackupRequestResponse {
     Confirm { worker_address: Address },
     Decline,
 }

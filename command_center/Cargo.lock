@@ -684,6 +684,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "wasm-bindgen",
  "windows-targets",
 ]
@@ -710,6 +711,7 @@ dependencies = [
  "anyhow",
  "base64 0.22.1",
  "bincode",
+ "chrono",
  "files_lib",
  "frankenstein",
  "kinode_process_lib 0.8.0",
@@ -1016,6 +1018,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bincode",
+ "chrono",
  "kinode_process_lib 0.8.0",
  "rand 0.8.5",
  "rust-crypto-wasm",

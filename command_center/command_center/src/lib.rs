@@ -2,13 +2,16 @@ use base64::{engine::general_purpose, Engine as _};
 use std::collections::HashMap;
 use std::path::Path;
 
+use chrono::DateTime;
+use chrono::Utc;
+
 use kinode_process_lib::vfs::{
     create_drive, create_file, open_dir, open_file, DirEntry, FileType, SeekFrom, VfsAction,
     VfsRequest,
 };
 use kinode_process_lib::{
     await_message, call_init, get_blob, http, our_capabilities, println, spawn, Address, Message,
-    OnExit, Request, Response,
+    NodeId, OnExit, Request, Response,
 };
 
 use llm_interface::openai::*;
@@ -22,7 +25,8 @@ mod tg_api;
 
 use files_lib::encryption::{decrypt_data, ENCRYPTED_CHUNK_SIZE};
 use files_lib::structs::{
-    BackupResponse, ClientRequest, ServerResponse, UiRequest, WorkerRequest, WorkerRequestType,
+    BackupRequestResponse, ClientRequest, ServerResponse, UiRequest, WorkerRequest,
+    WorkerRequestType,
 };
 use files_lib::{import_notes, read_nested_dir_light};
 
@@ -35,6 +39,7 @@ fn handle_backup_message(
     our: &Address,
     message: &Message,
     data_password_hash: &mut String,
+    backups_time_map: &mut HashMap<String, DateTime<Utc>>,
 ) -> anyhow::Result<()> {
     match &message {
         Message::Request { body, .. } => {
@@ -56,7 +61,25 @@ fn handle_backup_message(
                             password_hash: None,
                         })?)
                         .target(&our_worker_address)
-                        .send_and_await_response(5)??;
+                        .send()?;
+
+                    println!("backups_time_map: {:#?}", backups_time_map);
+                    println!(
+                        "datetime {}",
+                        backups_time_map
+                            .get(&message.source().node)
+                            .unwrap_or(&chrono::Utc::now())
+                            .clone(),
+                    );
+                    let backup_response: Vec<u8> =
+                        serde_json::to_vec(&ServerResponse::BackupRetrieveResponse(
+                            backups_time_map
+                                .get(&message.source().node)
+                                .unwrap_or(&chrono::Utc::now())
+                                .clone(),
+                        ))?;
+                    let _resp: Result<(), anyhow::Error> =
+                        Response::new().body(backup_response).send();
                 }
                 // receiving backup request from client
                 ClientRequest::BackupRequest { .. } => {
@@ -65,12 +88,15 @@ fn handle_backup_message(
                         message.source().node,
                     );
 
+                    backups_time_map.insert(message.source().node.to_string(), chrono::Utc::now());
+                    println!("backups_time_map: {:#?}", backups_time_map);
+
                     // TODO: add criterion here
                     // whether we want to back up or not
                     let our_worker_address = initialize_worker(our.clone())?;
 
                     let backup_response: Vec<u8> = serde_json::to_vec(
-                        &ServerResponse::BackupResponse(BackupResponse::Confirm {
+                        &ServerResponse::BackupRequestResponse(BackupRequestResponse::Confirm {
                             worker_address: our_worker_address.clone(),
                         }),
                     )?;
@@ -93,8 +119,15 @@ fn handle_backup_message(
         Message::Response { body, .. } => {
             let deserialized: ServerResponse = serde_json::from_slice::<ServerResponse>(body)?;
             match deserialized {
-                ServerResponse::BackupResponse(backup_response) => match backup_response {
-                    BackupResponse::Confirm { worker_address } => {
+                ServerResponse::BackupRetrieveResponse(datetime) => {
+                    println!(
+                        "received BackupRetrieveResponse from {:?}",
+                        message.source().node
+                    );
+                    println!("last backup was made at: {:?}.", datetime);
+                }
+                ServerResponse::BackupRequestResponse(backup_response) => match backup_response {
+                    BackupRequestResponse::Confirm { worker_address } => {
                         println!(
                             "received Confirm backup_response from {:?}",
                             message.source().node,
@@ -112,11 +145,14 @@ fn handle_backup_message(
                             .target(&our_worker_address)
                             .send()?;
 
+                        backups_time_map.insert(our.node.clone(), chrono::Utc::now());
+                        println!("backups_time_map: {:#?}", backups_time_map);
+
                         println!("data_password_hash before: {}", data_password_hash);
                         *data_password_hash = String::new();
                         println!("data_password_hash after: {}", data_password_hash);
                     }
-                    BackupResponse::Decline { .. } => {
+                    BackupRequestResponse::Decline { .. } => {
                         println!(
                             "received Decline backup_response from {:?}",
                             message.source().node,
@@ -329,11 +365,12 @@ fn handle_message(
     data_password_hash: &mut String,
     our_files_path: &String,
     retrieved_encrypted_backup_path: &String,
+    backups_time_map: &mut HashMap<String, DateTime<Utc>>,
 ) -> anyhow::Result<()> {
     let message = await_message()?;
 
     if message.source().node != our.node {
-        handle_backup_message(our, &message, data_password_hash)?;
+        handle_backup_message(our, &message, data_password_hash, backups_time_map)?;
     }
 
     match message.source().process.to_string().as_str() {
@@ -596,6 +633,8 @@ fn init(our: Address) {
         create_drive(our.package_id(), "retrieved_encrypted_backup", Some(5)).unwrap();
     let mut data_password_hash = "".to_string();
 
+    let mut backups_time_map: HashMap<NodeId, DateTime<Utc>> = HashMap::new();
+
     loop {
         match handle_message(
             &our,
@@ -604,6 +643,7 @@ fn init(our: Address) {
             &mut data_password_hash,
             &our_files_path,
             &retrieved_encrypted_backup_path,
+            &mut backups_time_map,
         ) {
             Ok(_) => {}
             Err(e) => println!("Error: {:?}", e),
