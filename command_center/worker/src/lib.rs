@@ -80,11 +80,6 @@ fn handle_message(
                                 // we have a target, chunk the data, and send it.
                                 let size = active_file.metadata()?.len;
                                 println!("path: {}", path);
-                                // give the receiving worker a size request so it can track it's progress!
-                                Request::new()
-                                    .body(serde_json::to_vec(&WorkerRequest::Size(size))?)
-                                    .target(target_worker.clone())
-                                    .send()?;
 
                                 let mut file_name = String::new();
                                 let _pos = active_file.seek(SeekFrom::Start(0))?;
@@ -127,77 +122,27 @@ fn handle_message(
                                 };
 
                                 // chunking and sending
-                                match request_type {
-                                    BackingUp => {
-                                        // have to deal with encryption change the length of buffer
-                                        // hence offset needs to be accumulated and length of each chunk sent can change
-                                        let mut encrypted_offset: u64 = 0;
-                                        let num_chunks =
-                                            (size as f64 / CHUNK_SIZE as f64).ceil() as u64;
-                                        println!("chunking");
-                                        for i in 0..num_chunks {
-                                            let offset = i * CHUNK_SIZE;
-                                            let length = CHUNK_SIZE.min(size - offset); // size=file size
-                                            let mut buffer = vec![0; length as usize];
-                                            let _pos = active_file.seek(SeekFrom::Current(0))?;
-                                            active_file.read_at(&mut buffer)?;
-                                            let buffer =
-                                                encrypt_data(&buffer, password_hash.as_str());
 
-                                            if buffer.len() >= 4 {
-                                                println!(
-                                                    "First 2 bytes: {:02X?} {:02X?}",
-                                                    buffer[0], buffer[1]
-                                                );
-                                                println!(
-                                                    "Last 2 bytes: {:02X?} {:02X?}",
-                                                    buffer[buffer.len() - 2],
-                                                    buffer[buffer.len() - 1]
-                                                );
-                                            } else {
-                                                println!("Buffer is too small to print first and last 2 bytes");
-                                            }
-                                            let encrypted_length = buffer.len() as u64;
-                                            Request::new()
-                                                .body(serde_json::to_vec(&WorkerRequest::Chunk {
-                                                    request_type: request_type.clone(),
-                                                    file_name: file_name.clone(),
-                                                    offset: encrypted_offset,
-                                                    length: encrypted_length,
-                                                    done: false,
-                                                })?)
-                                                .target(target_worker.clone())
-                                                .blob_bytes(buffer.clone())
-                                                .send()?;
-                                            encrypted_offset += encrypted_length;
-                                        }
+                                let num_chunks = (size as f64 / CHUNK_SIZE as f64).ceil() as u64;
+                                for i in 0..num_chunks {
+                                    let offset = i * CHUNK_SIZE;
+                                    let length = CHUNK_SIZE.min(size - offset); // size=file size
+                                    let mut buffer = vec![0; length as usize];
+                                    let _pos = active_file.seek(SeekFrom::Current(0))?;
+                                    active_file.read_at(&mut buffer)?;
+                                    if let BackingUp = request_type {
+                                        buffer = encrypt_data(&buffer, password_hash.as_str());
                                     }
-                                    RetrievingBackup => {
-                                        // buffer size is consistent
-                                        let num_chunks =
-                                            (size as f64 / CHUNK_SIZE as f64).ceil() as u64;
 
-                                        for i in 0..num_chunks {
-                                            let offset = i * CHUNK_SIZE;
-                                            let length = CHUNK_SIZE.min(size - offset);
-
-                                            let mut buffer = vec![0; length as usize];
-                                            let _pos = active_file.seek(SeekFrom::Current(0))?;
-                                            active_file.read_at(&mut buffer)?;
-
-                                            Request::new()
-                                                .body(serde_json::to_vec(&WorkerRequest::Chunk {
-                                                    request_type: request_type.clone(),
-                                                    file_name: file_name.clone(),
-                                                    offset,
-                                                    length,
-                                                    done: false,
-                                                })?)
-                                                .target(target_worker.clone())
-                                                .blob_bytes(buffer.clone())
-                                                .send()?;
-                                        }
-                                    }
+                                    Request::new()
+                                        .body(serde_json::to_vec(&WorkerRequest::Chunk {
+                                            request_type: request_type.clone(),
+                                            file_name: file_name.clone(),
+                                            done: false,
+                                        })?)
+                                        .target(target_worker.clone())
+                                        .blob_bytes(buffer.clone())
+                                        .send()?;
                                 }
                             }
                             println!("worker: sent everything");
@@ -205,8 +150,6 @@ fn handle_message(
                                 .body(serde_json::to_vec(&WorkerRequest::Chunk {
                                     request_type,
                                     file_name: "".to_string(),
-                                    offset: 0,
-                                    length: 0,
                                     done: true,
                                 })?)
                                 .target(target_worker.clone())
@@ -259,8 +202,6 @@ fn handle_message(
                 WorkerRequest::Chunk {
                     request_type,
                     file_name,
-                    offset,
-                    length,
                     done,
                 } => {
                     if done == true {
@@ -363,9 +304,6 @@ fn handle_message(
                             file.append(&bytes)?;
                         }
                     }
-                }
-                WorkerRequest::Size(incoming_size) => {
-                    *size = Some(incoming_size);
                 }
             }
         }

@@ -49,10 +49,7 @@ pub enum WorkerRequest {
         request_type: WorkerRequestType,
         done: bool,
         file_name: String,
-        offset: u64,
-        length: u64,
     },
-    Size(u64),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
