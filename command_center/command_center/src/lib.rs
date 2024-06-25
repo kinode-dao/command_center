@@ -92,8 +92,8 @@ fn handle_backup_message(
         Message::Response { body, .. } => {
             let deserialized: ServerResponse = serde_json::from_slice::<ServerResponse>(body)?;
             match deserialized {
-                ServerResponse::BackupResponse(backup_response) => {
-                    if let BackupResponse::Confirm { worker_address } = backup_response {
+                ServerResponse::BackupResponse(backup_response) => match backup_response {
+                    BackupResponse::Confirm { worker_address } => {
                         println!(
                             "received Confirm backup_response from {:?}",
                             message.source().node,
@@ -109,14 +109,19 @@ fn handle_backup_message(
                                 password_hash: Some(data_password_hash.clone()),
                             })?)
                             .target(&our_worker_address)
-                            .send_and_await_response(5)??;
-                    } else {
+                            .send()?;
+
+                        println!("data_password_hash before: {}", data_password_hash);
+                        *data_password_hash = String::new();
+                        println!("data_password_hash after: {}", data_password_hash);
+                    }
+                    BackupResponse::Decline { .. } => {
                         println!(
                             "received Decline backup_response from {:?}",
-                            message.source().node
+                            message.source().node,
                         );
                     }
-                }
+                },
             }
         }
     }
@@ -342,13 +347,7 @@ fn handle_message(
 
                 match deserialized {
                     // making backup retrieval request to server
-                    UiRequest::BackupRetrieve {
-                        node_id,
-                        password_hash,
-                    } => {
-                        *data_password_hash = password_hash.clone();
-                        println!("data_password_hash: {}", data_password_hash);
-
+                    UiRequest::BackupRetrieve { node_id } => {
                         println!("sending backup retrieve request to server: {:?}", node_id);
 
                         let our_worker_address = initialize_worker(our.clone())?;

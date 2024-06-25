@@ -27,7 +27,6 @@ fn handle_message(
     encrypted_storage_dir: &Directory,
     retrieved_encrypted_backup_dir: &Directory,
     size: &mut Option<u64>,
-    password_hash_temp: &mut String,
 ) -> anyhow::Result<bool> {
     let message = await_message()?;
 
@@ -44,17 +43,14 @@ fn handle_message(
                 } => {
                     println!("command_center worker: got initialize request");
 
-                    if let Some(received_hash) = password_hash.clone() {
-                        *password_hash_temp = received_hash;
-                    }
-                    println!("password_hash_temp: {}", password_hash_temp);
-
                     // initialize command from main process,
                     // sets up worker, matches on if it's a sender or receiver.
                     // if target_worker = None, we are receiver, else sender.
                     match target_worker {
                         // send data to target worker
                         Some(target_worker) => {
+                            let password_hash = password_hash.unwrap_or_default();
+                            println!("password_hash: {}", password_hash);
                             let dir_entry: DirEntry = match request_type {
                                 BackingUp => {
                                     DirEntry {
@@ -72,7 +68,7 @@ fn handle_message(
                                     }
                                 }
                             };
-
+                            println!("dir_entry: {:?}", dir_entry);
                             // outputs map path contents, a flattened version of the nested dir
                             let dir = read_nested_dir_light(dir_entry)?;
 
@@ -83,7 +79,7 @@ fn handle_message(
 
                                 // we have a target, chunk the data, and send it.
                                 let size = active_file.metadata()?.len;
-
+                                println!("path: {}", path);
                                 // give the receiving worker a size request so it can track it's progress!
                                 Request::new()
                                     .body(serde_json::to_vec(&WorkerRequest::Size(size))?)
@@ -98,14 +94,14 @@ fn handle_message(
                                     // file_name in request:
                                     // GAXPVM7gDutxI3DnsFfhYk5H8vsuYPR1HIXLjJIpFcp4Ip_iXhl7u3voPX_uerfadAldI3PAKVYr0TpPk7qTndv3adGSGWMp9GLUuxPdOLUt84zyETiFgdm2kyYA0pihtLlOiu_E3A==
                                     BackingUp => {
+                                        println!("encrypting file name");
                                         // encrypt file name
                                         let prefix = "command_center:appattacc.os/files/";
-                                        println!("password_hash_temp: {}", password_hash_temp);
                                         if path.starts_with(prefix) {
                                             let rest_of_path = &path[prefix.len()..];
                                             let encrypted_vec = &encrypt_data(
                                                 rest_of_path.as_bytes(),
-                                                password_hash_temp.as_str(),
+                                                password_hash.as_str(),
                                             );
                                             let rest_of_path =
                                                 general_purpose::URL_SAFE.encode(&encrypted_vec);
@@ -133,15 +129,12 @@ fn handle_message(
                                 // chunking and sending
                                 match request_type {
                                     BackingUp => {
-                                        println!("here?2");
                                         // have to deal with encryption change the length of buffer
                                         // hence offset needs to be accumulated and length of each chunk sent can change
                                         let mut encrypted_offset: u64 = 0;
                                         let num_chunks =
                                             (size as f64 / CHUNK_SIZE as f64).ceil() as u64;
-
-                                        println!("here?3");
-
+                                        println!("chunking");
                                         for i in 0..num_chunks {
                                             let offset = i * CHUNK_SIZE;
                                             let length = CHUNK_SIZE.min(size - offset); // size=file size
@@ -149,11 +142,22 @@ fn handle_message(
                                             let _pos = active_file.seek(SeekFrom::Current(0))?;
                                             active_file.read_at(&mut buffer)?;
                                             let buffer =
-                                                encrypt_data(&buffer, password_hash_temp.as_str());
+                                                encrypt_data(&buffer, password_hash.as_str());
 
+                                            if buffer.len() >= 4 {
+                                                println!(
+                                                    "First 2 bytes: {:02X?} {:02X?}",
+                                                    buffer[0], buffer[1]
+                                                );
+                                                println!(
+                                                    "Last 2 bytes: {:02X?} {:02X?}",
+                                                    buffer[buffer.len() - 2],
+                                                    buffer[buffer.len() - 1]
+                                                );
+                                            } else {
+                                                println!("Buffer is too small to print first and last 2 bytes");
+                                            }
                                             let encrypted_length = buffer.len() as u64;
-                                            println!("here?4");
-
                                             Request::new()
                                                 .body(serde_json::to_vec(&WorkerRequest::Chunk {
                                                     request_type: request_type.clone(),
@@ -236,7 +240,7 @@ fn handle_message(
                                 .body(serde_json::to_vec(&request)?)
                                 .send_and_await_response(5)?;
 
-                            println!("starting to receive data for file: {}", full_path);
+                            println!("starting to receive data for dir: {}", full_path);
 
                             // maybe this is unnecessary in both cases (whether retrieving backup or backing up)?
                             let request: VfsRequest = VfsRequest {
@@ -296,6 +300,7 @@ fn handle_message(
                             println!("here?1");
 
                             file_path = format!("/{}/{}", path_to_dir, &file_name);
+                            println!("file_path: {}", file_path);
                             let _dir = open_dir(&format!("/{}", path_to_dir), false, Some(5))?;
                         }
                         RetrievingBackup => {
@@ -325,8 +330,13 @@ fn handle_message(
 
                     match request_type {
                         BackingUp => {
-                            println!("here?");
                             let mut file = open_file(&file_path, true, Some(5))?;
+                            println!("file_path: {}", file.path);
+                            println!(
+                                "first 2 bytes: {:?}, last 2 bytes: {:?}",
+                                bytes.get(0..2),
+                                bytes.get(bytes.len().saturating_sub(2)..)
+                            );
                             file.append(&bytes)?;
                         }
                         RetrievingBackup => {
@@ -382,7 +392,6 @@ fn init(our: Address) {
 
     // TODO size should be a hashmap of sizes for each file
     let mut size: Option<u64> = None;
-    let mut password_hash_temp: String = String::new();
 
     loop {
         match handle_message(
@@ -391,7 +400,6 @@ fn init(our: Address) {
             &encrypted_storage_dir,
             &retrieved_encrypted_backup_dir,
             &mut size,
-            &mut password_hash_temp,
         ) {
             Ok(exit) => {
                 if exit {
