@@ -111,7 +111,7 @@ fn handle_backup_message(
                             password_hash: None,
                         })?)
                         .target(&our_worker_address)
-                        .send_and_await_response(5)??;
+                        .send()?;
                 }
             }
         }
@@ -402,7 +402,7 @@ fn handle_message(
                         .send();
                         println!("sent retrieve request to {}", node_id);
 
-                        let _worker_request: Message = Request::new()
+                        let _worker_request = Request::new()
                             .body(serde_json::to_vec(&WorkerRequest::Initialize {
                                 request_type: WorkerRequestType::RetrievingBackup,
                                 uploader_node: Some(our.node.clone()),
@@ -410,7 +410,7 @@ fn handle_message(
                                 password_hash: Some(data_password_hash.clone()),
                             })?)
                             .target(&our_worker_address)
-                            .send_and_await_response(5)??;
+                            .send()?;
                     }
                     // making backup request to server
                     UiRequest::BackupRequest {
