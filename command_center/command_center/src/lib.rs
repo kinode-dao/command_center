@@ -20,10 +20,11 @@ use structs::*;
 
 mod tg_api;
 
-use files_lib::{
-    encryption::decrypt_data, import_notes, read_nested_dir_light, BackupResponse, ClientRequest,
-    ServerResponse, UiRequest, WorkerRequest, WorkerRequestType, ENCRYPTED_CHUNK_SIZE,
+use files_lib::encryption::{decrypt_data, ENCRYPTED_CHUNK_SIZE};
+use files_lib::structs::{
+    BackupResponse, ClientRequest, ServerResponse, UiRequest, WorkerRequest, WorkerRequestType,
 };
+use files_lib::{import_notes, read_nested_dir_light};
 
 wit_bindgen::generate!({
     path: "target/wit",

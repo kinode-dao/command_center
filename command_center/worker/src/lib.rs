@@ -10,10 +10,10 @@ use kinode_process_lib::{
     Address, Message, Request,
 };
 
-use files_lib::encryption::encrypt_data;
-use files_lib::{
-    read_nested_dir_light, WorkerRequest, WorkerRequestType::BackingUp,
-    WorkerRequestType::RetrievingBackup, CHUNK_SIZE,
+use files_lib::encryption::{encrypt_data, CHUNK_SIZE};
+use files_lib::read_nested_dir_light;
+use files_lib::structs::{
+    WorkerRequest, WorkerRequestType::BackingUp, WorkerRequestType::RetrievingBackup,
 };
 
 wit_bindgen::generate!({
