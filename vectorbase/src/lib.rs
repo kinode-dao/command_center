@@ -174,3 +174,5 @@ fn init(our: Address) {
         };
     }
 }
+
+// TODO: Zena: Maybe we can add some kind of intermittent embedding population? 
