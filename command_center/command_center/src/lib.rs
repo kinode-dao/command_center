@@ -465,6 +465,8 @@ fn init(our: Address) {
 
     let _our_files_path = create_drive(our.package_id(), "files", Some(5));
     let _encrypted_storage_path = create_drive(our.package_id(), "encrypted_storage", Some(5));
+    let _retrieved_encrypted_backup_path =
+        create_drive(our.package_id(), "retrieved_encrypted_backup", Some(5));
     let mut data_password_hash = "".to_string();
 
     loop {
