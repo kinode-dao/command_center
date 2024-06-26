@@ -112,6 +112,8 @@ fn handle_backup_message(
                         })?)
                         .target(&our_worker_address)
                         .send()?;
+
+                    println!("sent request to worker");
                 }
             }
         }
@@ -370,193 +372,197 @@ fn handle_message(
     let message = await_message()?;
 
     if message.source().node != our.node {
-        handle_backup_message(our, &message, data_password_hash, backups_time_map)?;
-    }
+        handle_backup_message(our, &message, data_password_hash, backups_time_map)
+    } else {
+        match message.source().process.to_string().as_str() {
+            "http_server:distro:sys" | "http_client:distro:sys" => {
+                handle_http_message(&our, &message, state, pkgs)
+            }
+            // TODO: add to handle_http_message later, when i implement the ui
+            // for now, it takes inputs from the teriminal
+            _ => match &message {
+                Message::Request { body, .. } => {
+                    let deserialized = serde_json::from_slice::<UiRequest>(body)?;
 
-    match message.source().process.to_string().as_str() {
-        "http_server:distro:sys" | "http_client:distro:sys" => {
-            handle_http_message(&our, &message, state, pkgs)
-        }
-        // TODO: add to handle_http_message later, when i implement the ui
-        // for now, it takes inputs from the teriminal
-        _ => match &message {
-            Message::Request { body, .. } => {
-                let deserialized = serde_json::from_slice::<UiRequest>(body)?;
+                    match deserialized {
+                        // making backup retrieval request to server
+                        UiRequest::BackupRetrieve { node_id } => {
+                            println!("sending backup retrieve request to server: {:?}", node_id);
 
-                match deserialized {
-                    // making backup retrieval request to server
-                    UiRequest::BackupRetrieve { node_id } => {
-                        println!("sending backup retrieve request to server: {:?}", node_id);
+                            let our_worker_address = initialize_worker(our.clone())?;
 
-                        let our_worker_address = initialize_worker(our.clone())?;
+                            let backup_retrieve =
+                                serde_json::to_vec(&ClientRequest::BackupRetrieve {
+                                    worker_address: our_worker_address.clone(),
+                                })?;
+                            let _ = Request::to(Address::new(
+                                node_id.clone(),
+                                ("main", "command_center", "appattacc.os"),
+                            ))
+                            .expects_response(5)
+                            .body(backup_retrieve)
+                            .send();
+                            println!("sent retrieve request to {}", node_id);
 
-                        let backup_retrieve = serde_json::to_vec(&ClientRequest::BackupRetrieve {
-                            worker_address: our_worker_address.clone(),
-                        })?;
-                        let _ = Request::to(Address::new(
-                            node_id.clone(),
-                            ("main", "command_center", "appattacc.os"),
-                        ))
-                        .expects_response(5)
-                        .body(backup_retrieve)
-                        .send();
-                        println!("sent retrieve request to {}", node_id);
-
-                        let _worker_request = Request::new()
-                            .body(serde_json::to_vec(&WorkerRequest::Initialize {
-                                request_type: WorkerRequestType::RetrievingBackup,
-                                uploader_node: Some(our.node.clone()),
-                                target_worker: None,
-                                password_hash: Some(data_password_hash.clone()),
-                            })?)
-                            .target(&our_worker_address)
-                            .send()?;
-                    }
-                    // making backup request to server
-                    UiRequest::BackupRequest {
-                        node_id,
-                        password_hash,
-                        ..
-                    } => {
-                        *data_password_hash = password_hash.clone();
-                        println!("data_password_hash: {}", data_password_hash);
-
-                        println!("sending backup request to server: {:?}", node_id);
-
-                        let backup_request =
-                            serde_json::to_vec(&ClientRequest::BackupRequest { size: 0 })?;
-                        let _ = Request::to(Address::new(
+                            let _worker_request = Request::new()
+                                .body(serde_json::to_vec(&WorkerRequest::Initialize {
+                                    request_type: WorkerRequestType::RetrievingBackup,
+                                    uploader_node: Some(our.node.clone()),
+                                    target_worker: None,
+                                    password_hash: Some(data_password_hash.clone()),
+                                })?)
+                                .target(&our_worker_address)
+                                .send()?;
+                        }
+                        // making backup request to server
+                        UiRequest::BackupRequest {
                             node_id,
-                            ("main", "command_center", "appattacc.os"),
-                        ))
-                        .expects_response(5)
-                        .body(backup_request)
-                        .send();
-                    }
-                    // decrypt retrieved backup
-                    UiRequest::Decrypt { password_hash, .. } => {
-                        // !!decryption here, then isolate into a function
-                        let dir_entry: DirEntry =
+                            password_hash,
+                            ..
+                        } => {
+                            *data_password_hash = password_hash.clone();
+                            println!("data_password_hash: {}", data_password_hash);
+
+                            println!("sending backup request to server: {:?}", node_id);
+
+                            let backup_request =
+                                serde_json::to_vec(&ClientRequest::BackupRequest { size: 0 })?;
+                            let _ = Request::to(Address::new(
+                                node_id,
+                                ("main", "command_center", "appattacc.os"),
+                            ))
+                            .expects_response(5)
+                            .body(backup_request)
+                            .send();
+                        }
+                        // decrypt retrieved backup
+                        UiRequest::Decrypt { password_hash, .. } => {
+                            // !!decryption here, then isolate into a function
+                            let dir_entry: DirEntry =
                                                 // /command_center:appattacc.os/retrieved_encrypted_backup
                                                 DirEntry {
                                                     path: retrieved_encrypted_backup_path.clone(),
                                                     file_type: FileType::Directory,
                                                 };
 
-                        let request: VfsRequest = VfsRequest {
-                            path: "command_center:appattacc.os/files".to_string(),
-                            action: VfsAction::RemoveDirAll,
-                        };
-                        let _message = Request::new()
-                            .target(("our", "vfs", "distro", "sys"))
-                            .body(serde_json::to_vec(&request)?)
-                            .send_and_await_response(5)?;
+                            let request: VfsRequest = VfsRequest {
+                                path: "command_center:appattacc.os/files".to_string(),
+                                action: VfsAction::RemoveDirAll,
+                            };
+                            let _message = Request::new()
+                                .target(("our", "vfs", "distro", "sys"))
+                                .body(serde_json::to_vec(&request)?)
+                                .send_and_await_response(5)?;
 
-                        let request: VfsRequest = VfsRequest {
-                            path: "command_center:appattacc.os/files".to_string(),
-                            action: VfsAction::CreateDirAll,
-                        };
-                        let _message = Request::new()
-                            .target(("our", "vfs", "distro", "sys"))
-                            .body(serde_json::to_vec(&request)?)
-                            .send_and_await_response(5)?;
-
-                        let dir = read_nested_dir_light(dir_entry)?;
-                        // decrypt each file
-                        for path in dir.keys() {
-                            // open/create empty file
-                            let mut active_file = open_file(path, false, Some(5))?;
-
-                            // chunk the data
-                            let size = active_file.metadata()?.len;
-
-                            let mut file_name = String::new();
-                            let _pos = active_file.seek(SeekFrom::Start(0))?;
-
-                            // path: e.g. command_center:appattacc.os/retrieved_encrypted_backup/GAXPVM7gDutxI3DnsFfhYk5H8vsuYPR1HIXLjJIpFcp4Ip_iXhl7u3voPX_uerfadAldI3PAKVYr0TpPk7qTndv3adGSGWMp9GLUuxPdOLUt84zyETiFgdm2kyYA0pihtLlOiu_E3A
-                            println!("path: {}", path);
-                            let path = Path::new(path);
-                            file_name = path
-                                .file_name()
-                                .unwrap_or_default()
-                                .to_str()
-                                .unwrap_or_default()
-                                .to_string();
-
-                            println!("file name pre decryption: {}", file_name);
-                            // !! file name decryption
-                            let decoded_vec = general_purpose::URL_SAFE.decode(&file_name)?;
-                            let decrypted_vec = decrypt_data(&decoded_vec, password_hash.as_str())
-                                .unwrap_or_default();
-                            let decrypted_path = String::from_utf8(decrypted_vec).map_err(|e| {
-                                anyhow::anyhow!("Failed to convert bytes to string: {}", e)
-                            })?;
-                            let file_path = format!("{}/{}", our_files_path, decrypted_path);
-                            println!("file_path: {}", file_path);
-                            let parent_path = Path::new(&file_path)
-                                .parent()
-                                .and_then(|p| p.to_str())
-                                .unwrap_or("")
-                                .to_string();
-                            println!("parent_path: {}", parent_path);
-                            let request = VfsRequest {
-                                path: format!("/{}", parent_path).to_string(),
+                            let request: VfsRequest = VfsRequest {
+                                path: "command_center:appattacc.os/files".to_string(),
                                 action: VfsAction::CreateDirAll,
                             };
                             let _message = Request::new()
                                 .target(("our", "vfs", "distro", "sys"))
                                 .body(serde_json::to_vec(&request)?)
                                 .send_and_await_response(5)?;
-                            let _dir = open_dir(&parent_path, false, Some(5))?;
-                            println!("parent path created: {}", parent_path);
 
-                            // chunking and decrypting
-                            // have to deal with encryption change the length of buffer
-                            // hence offset needs to be accumulated and length of each chunk sent can change
-                            let num_chunks =
-                                (size as f64 / ENCRYPTED_CHUNK_SIZE as f64).ceil() as u64;
+                            let dir = read_nested_dir_light(dir_entry)?;
+                            // decrypt each file
+                            for path in dir.keys() {
+                                // open/create empty file
+                                let mut active_file = open_file(path, false, Some(5))?;
 
-                            //     println!("here?3");
+                                // chunk the data
+                                let size = active_file.metadata()?.len;
 
-                            for i in 0..num_chunks {
-                                let offset = i * ENCRYPTED_CHUNK_SIZE;
-                                let length = ENCRYPTED_CHUNK_SIZE.min(size - offset); // size=file size
-                                let mut buffer = vec![0; length as usize];
-                                let _pos = active_file.seek(SeekFrom::Current(0))?;
-                                active_file.read_at(&mut buffer)?;
-                                println!("here?4");
+                                let mut file_name = String::new();
+                                let _pos = active_file.seek(SeekFrom::Start(0))?;
 
-                                // !! decrypting data
-                                let decrypted_bytes = decrypt_data(&buffer, password_hash.as_str())
-                                    .unwrap_or_default();
-                                let dir = open_dir(&parent_path, false, None)?;
-                                println!("here2.5");
+                                // path: e.g. command_center:appattacc.os/retrieved_encrypted_backup/GAXPVM7gDutxI3DnsFfhYk5H8vsuYPR1HIXLjJIpFcp4Ip_iXhl7u3voPX_uerfadAldI3PAKVYr0TpPk7qTndv3adGSGWMp9GLUuxPdOLUt84zyETiFgdm2kyYA0pihtLlOiu_E3A
+                                println!("path: {}", path);
+                                let path = Path::new(path);
+                                file_name = path
+                                    .file_name()
+                                    .unwrap_or_default()
+                                    .to_str()
+                                    .unwrap_or_default()
+                                    .to_string();
 
-                                let entries = dir.read()?;
-                                println!("here2.6");
+                                println!("file name pre decryption: {}", file_name);
+                                // !! file name decryption
+                                let decoded_vec = general_purpose::URL_SAFE.decode(&file_name)?;
+                                let decrypted_vec =
+                                    decrypt_data(&decoded_vec, password_hash.as_str())
+                                        .unwrap_or_default();
+                                let decrypted_path =
+                                    String::from_utf8(decrypted_vec).map_err(|e| {
+                                        anyhow::anyhow!("Failed to convert bytes to string: {}", e)
+                                    })?;
+                                let file_path = format!("{}/{}", our_files_path, decrypted_path);
+                                println!("file_path: {}", file_path);
+                                let parent_path = Path::new(&file_path)
+                                    .parent()
+                                    .and_then(|p| p.to_str())
+                                    .unwrap_or("")
+                                    .to_string();
+                                println!("parent_path: {}", parent_path);
+                                let request = VfsRequest {
+                                    path: format!("/{}", parent_path).to_string(),
+                                    action: VfsAction::CreateDirAll,
+                                };
+                                let _message = Request::new()
+                                    .target(("our", "vfs", "distro", "sys"))
+                                    .body(serde_json::to_vec(&request)?)
+                                    .send_and_await_response(5)?;
+                                let _dir = open_dir(&parent_path, false, Some(5))?;
+                                println!("parent path created: {}", parent_path);
 
-                                if entries.contains(&DirEntry {
-                                    path: file_path[1..].to_string(),
-                                    file_type: FileType::File,
-                                }) {
-                                } else {
-                                    println!("here2.7");
+                                // chunking and decrypting
+                                // have to deal with encryption change the length of buffer
+                                // hence offset needs to be accumulated and length of each chunk sent can change
+                                let num_chunks =
+                                    (size as f64 / ENCRYPTED_CHUNK_SIZE as f64).ceil() as u64;
 
-                                    let _file = create_file(&file_path, Some(5))?;
+                                //     println!("here?3");
+
+                                for i in 0..num_chunks {
+                                    let offset = i * ENCRYPTED_CHUNK_SIZE;
+                                    let length = ENCRYPTED_CHUNK_SIZE.min(size - offset); // size=file size
+                                    let mut buffer = vec![0; length as usize];
+                                    let _pos = active_file.seek(SeekFrom::Current(0))?;
+                                    active_file.read_at(&mut buffer)?;
+                                    println!("here?4");
+
+                                    // !! decrypting data
+                                    let decrypted_bytes =
+                                        decrypt_data(&buffer, password_hash.as_str())
+                                            .unwrap_or_default();
+                                    let dir = open_dir(&parent_path, false, None)?;
+                                    println!("here2.5");
+
+                                    let entries = dir.read()?;
+                                    println!("here2.6");
+
+                                    if entries.contains(&DirEntry {
+                                        path: file_path[1..].to_string(),
+                                        file_type: FileType::File,
+                                    }) {
+                                    } else {
+                                        println!("here2.7");
+
+                                        let _file = create_file(&file_path, Some(5))?;
+                                    }
+
+                                    println!("here3");
+
+                                    let mut file = open_file(&file_path, false, Some(5))?;
+                                    file.append(&decrypted_bytes)?;
                                 }
-
-                                println!("here3");
-
-                                let mut file = open_file(&file_path, false, Some(5))?;
-                                file.append(&decrypted_bytes)?;
                             }
                         }
                     }
+                    Ok(())
                 }
-                Ok(())
-            }
-            _ => return Ok(()),
-        },
+                _ => return Ok(()),
+            },
+        }
     }
 }
 
