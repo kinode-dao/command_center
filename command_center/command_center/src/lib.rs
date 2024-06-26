@@ -436,7 +436,6 @@ fn handle_message(
                     }
                     // decrypt retrieved backup
                     UiRequest::Decrypt { password_hash, .. } => {
-                        // !!decryption here, then isolate into a function
                         let dir_entry: DirEntry =
                                                 // /command_center:appattacc.os/retrieved_encrypted_backup
                                                 DirEntry {
@@ -485,10 +484,16 @@ fn handle_message(
                                 .to_string();
 
                             println!("file name pre decryption: {}", file_name);
-                            // !! file name decryption
+                            // file name decryption
                             let decoded_vec = general_purpose::URL_SAFE.decode(&file_name)?;
-                            let decrypted_vec = decrypt_data(&decoded_vec, password_hash.as_str())
-                                .unwrap_or_default();
+                            let decrypted_vec =
+                                match decrypt_data(&decoded_vec, password_hash.as_str()) {
+                                    Ok(vec) => vec,
+                                    Err(e) => {
+                                        println!("couldn't decrypt file name");
+                                        return Err(anyhow::anyhow!(e));
+                                    }
+                                };
                             let decrypted_path = String::from_utf8(decrypted_vec).map_err(|e| {
                                 anyhow::anyhow!("Failed to convert bytes to string: {}", e)
                             })?;
@@ -527,9 +532,16 @@ fn handle_message(
                                 active_file.read_at(&mut buffer)?;
                                 println!("here?4");
 
-                                // !! decrypting data
-                                let decrypted_bytes = decrypt_data(&buffer, password_hash.as_str())
-                                    .unwrap_or_default();
+                                // decrypting data
+                                let decrypted_bytes =
+                                    match decrypt_data(&buffer, password_hash.as_str()) {
+                                        Ok(vec) => vec,
+                                        Err(e) => {
+                                            println!("couldn't decrypt file data");
+                                            return Err(anyhow::anyhow!(e));
+                                        }
+                                    };
+
                                 let dir = open_dir(&parent_path, false, None)?;
                                 println!("here2.5");
 
@@ -552,6 +564,30 @@ fn handle_message(
                                 file.append(&decrypted_bytes)?;
                             }
                         }
+
+                        // remove after all decryption is successful,
+                        // remove files folder and rename files_temp to files
+                        let request: VfsRequest = VfsRequest {
+                            path: our_files_path.clone(),
+                            action: VfsAction::RemoveDirAll,
+                        };
+                        let _message = Request::new()
+                            .target(("our", "vfs", "distro", "sys"))
+                            .body(serde_json::to_vec(&request)?)
+                            .send_and_await_response(5)?;
+
+                        let request: VfsRequest = VfsRequest {
+                            path: temp_files_path.clone(),
+                            action: VfsAction::Rename {
+                                new_path: our_files_path.to_string(),
+                            },
+                        };
+                        let _message = Request::new()
+                            .target(("our", "vfs", "distro", "sys"))
+                            .body(serde_json::to_vec(&request)?)
+                            .send_and_await_response(5)?;
+
+                        let _ = create_drive(our.package_id(), "files_temp", Some(5));
                     }
                 }
                 Ok(())
