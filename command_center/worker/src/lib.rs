@@ -22,11 +22,11 @@ wit_bindgen::generate!({
 });
 
 fn handle_message(
-    our: &Address,
+    _our: &Address,
     files_dir: &Directory,
     encrypted_storage_dir: &Directory,
     retrieved_encrypted_backup_dir: &Directory,
-    size: &mut Option<u64>,
+    _size: &mut Option<u64>,
 ) -> anyhow::Result<bool> {
     let message = await_message()?;
 
@@ -234,7 +234,6 @@ fn handle_message(
                         }
                     }
 
-                    let mut parent_path = String::new();
                     let mut file_path = String::new();
                     match request_type {
                         BackingUp => {
