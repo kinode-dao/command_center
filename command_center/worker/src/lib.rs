@@ -94,6 +94,7 @@ fn handle_message(
                                         let prefix = "command_center:appattacc.os/files/";
                                         if path.starts_with(prefix) {
                                             let rest_of_path = &path[prefix.len()..];
+                                            println!("rest of path: {}", rest_of_path.clone());
                                             let encrypted_vec = &encrypt_data(
                                                 rest_of_path.as_bytes(),
                                                 password_hash.as_str(),
@@ -101,6 +102,7 @@ fn handle_message(
                                             let rest_of_path =
                                                 general_purpose::URL_SAFE.encode(&encrypted_vec);
                                             file_name = rest_of_path;
+                                            println!("encrypted name: {}", file_name.clone());
                                         } else {
                                             return Err(anyhow::anyhow!(
                                                 "Path does not start with the expected prefix"
@@ -123,15 +125,31 @@ fn handle_message(
 
                                 // chunking and sending
 
-                                let num_chunks = (size as f64 / CHUNK_SIZE as f64).ceil() as u64;
+                                let num_chunks = if size != 0 {
+                                    (size as f64 / CHUNK_SIZE as f64).ceil() as u64
+                                } else {
+                                    1
+                                };
+
+                                println!("num_chunks: {}", num_chunks);
                                 for i in 0..num_chunks {
+                                    if i == 0 || i == 1 {
+                                        println!("i: {}", i);
+                                    }
                                     let offset = i * CHUNK_SIZE;
                                     let length = CHUNK_SIZE.min(size - offset); // size=file size
                                     let mut buffer = vec![0; length as usize];
                                     let _pos = active_file.seek(SeekFrom::Current(0))?;
                                     active_file.read_at(&mut buffer)?;
+
+                                    if let Some(first_element) = buffer.first() {
+                                        println!("buffer first: {:?}", first_element);
+                                    }
                                     if let BackingUp = request_type {
                                         buffer = encrypt_data(&buffer, password_hash.as_str());
+                                    }
+                                    if let Some(first_element) = buffer.first() {
+                                        println!("encrypted buffer first: {:?}", first_element);
                                     }
 
                                     Request::new()
