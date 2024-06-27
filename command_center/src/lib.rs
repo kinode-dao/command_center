@@ -118,6 +118,17 @@ fn submit_config(
                             .body(req)
                             .send_and_await_response(5)??;
                     }
+                    if let Some(claude_key) = &state.config.claude_key {
+                        let req = serde_json::to_vec(&llm_interface::openai::LLMRequest::RegisterClaudeApiKey(
+                            RegisterApiKeyRequest {
+                                api_key: claude_key.clone(),
+                            },
+                        ))?;
+                        let _ = Request::new()
+                            .target(addr.clone())
+                            .body(req)
+                            .send_and_await_response(5)??;
+                    }
                 }
                 Pkg::STT => {
                     if let Some(openai_key) = &state.config.openai_key {

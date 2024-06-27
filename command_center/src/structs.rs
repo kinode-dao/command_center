@@ -41,4 +41,5 @@ pub struct InitialConfig {
     pub telegram_key: Option<String>,
     pub openai_key: Option<String>,
     pub groq_key: Option<String>,
+    pub claude_key: Option<String>,
 }

@@ -1,5 +1,5 @@
 use kinode_process_lib::{
-    await_message, call_init, Address, Message, get_blob, Request, /*println */
+    await_message, call_init, Address, Message, get_blob, Request, println 
 };
 use frankenstein::{Message as TgMessage, UpdateContent, ChatId, SendMessageParams};
 
@@ -50,6 +50,31 @@ pub fn handle_telegram_message(message: &Message) -> anyhow::Result<()> {
     let _message = send_bot_message(&answer, id);
     Ok(())
 }
+
+fn _get_claude_answer(text: &str) -> anyhow::Result<String> {
+    let request = ClaudeChatRequestBuilder::default()
+        .model("claude-3-5-sonnet-20240620".to_string())
+        .messages(vec![MessageBuilder::default()
+            .role("user".to_string())
+            .content(text.to_string())
+            .build()?])
+        .max_tokens(Some(300))
+        .build()?;
+    let request = serde_json::to_vec(&LLMRequest::ClaudeChat(request))?;
+    let response = Request::to(LLM_ADDRESS)
+        .body(request)
+        .send_and_await_response(30)??;
+    let LLMResponse::ClaudeChat(chat) = serde_json::from_slice(response.body())? else {
+        println!("chatbot: failed to parse LLM response");
+        return Err(anyhow::anyhow!("Failed to parse LLM response"));
+    };
+    let content_string = chat.content.iter()
+        .map(|content| content.text.clone())
+        .collect::<Vec<String>>()
+        .join("");
+    Ok(content_string)
+}
+
 
 fn send_bot_message(text: &str, id: i64) -> anyhow::Result<TgMessage> {
     println!("chatbot: send bot message: {}", text);
@@ -152,7 +177,6 @@ pub fn subscribe() -> anyhow::Result<()> {
 call_init!(init);
 fn init(our: Address) {
     let _ = subscribe();
-    println!("chatbot: init");
     loop {
         match handle_message(&our) {
             Ok(_) => {}
