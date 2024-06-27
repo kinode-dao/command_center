@@ -4,14 +4,10 @@ import './App.css'
 
 import FlexSearch from "../node_modules/flexsearch/dist/flexsearch.bundle.module.min.js";
 
-// Make it available globally
-window.handleLinkClick = handleLinkClick;
-window.importNotes = importNotes;
-window.openTab = openTab;
-
-
 function App() {
   const [activeTab, setActiveTab] = useState('Config');
+  const [notesResult, setNotesResult] = useState(''); 
+
   const options = {
     charset: "latin:extra",
     preset: 'match',
@@ -20,10 +16,130 @@ function App() {
   const notes_index = new FlexSearch.Index(options);
   let notes = {};
 
-  webSocket();
-  initializeTooltips();
-  fetchStatus();
-  fetchNotes();
+  const fetchNotes = async () => {
+    setNotesResult('Fetching notes and preparing index...');
+    try {
+      const response = await fetch('/main:command_center:appattacc.os/notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      const fetchedNotes = await response.json();
+      setNotes(fetchedNotes);
+  
+      console.log("creating index");
+      const newIndex = new FlexSearch.Index(options);
+      for (let key in fetchedNotes) {
+        try {
+          newIndex.add(key, fetchedNotes[key]);
+          createNotePage(key, fetchedNotes[key]);
+        } catch (error) {
+          console.error("Error adding note to index:", key);
+        }
+      }
+      setNotesIndex(newIndex);
+  
+      if (Object.keys(fetchedNotes).length === 0) {
+        setNotesResult('No notes found. Please import.');
+      } else {
+        setNotesResult('Ready to search!');
+      }
+      console.log("index created");
+    } catch (error) {
+      console.error("Error fetching notes:", error);
+      setNotesResult('Error fetching notes. Please try again.');
+    }
+  }
+
+  const searchNotes = () => {
+    console.log(notes_index);
+    const searchQuery = document.getElementById('notesSearch').value || null;
+    console.log(searchQuery);
+    const ids = notes_index.search(searchQuery, 15);
+    console.log(ids);
+    const notes_result = Object.fromEntries(
+      Object.entries(notes).filter(([key, value]) => ids.includes(key))
+    );
+  
+    console.log(notes_result);
+  
+    document.getElementById('notesResult').innerHTML =
+      `<ul>
+          ${Object.keys(notes_result).map((key) => {
+        return `<nav><a href="#/${key}" id="${key}" onClick="handleLinkClick('${key}')">${key}</a></nav>`
+      }).join('')}
+        </ul>`
+  }
+  
+  const handleLinkClick = (id) => {
+    console.log("clicked");
+    console.log(id);
+  }
+  
+  
+  
+  function createNotePage(key, note) {
+  }
+  
+  const importNotes = async () => {
+    document.getElementById('importNotesResult').textContent = 'Importing notes...';
+    const input = document.getElementById('folderInput');
+    const files = input.files;
+    const fileContentsMap = new Map();
+  
+    const readFiles = Array.from(files).map(file => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          fileContentsMap.set(file.webkitRelativePath, event.target.result);
+          resolve();
+        };
+        reader.onerror = function (event) {
+          console.error("File could not be read! Code " + event.target.error.code);
+          reject(event.target.error);
+        };
+        reader.readAsText(file);
+      });
+    });
+  
+    Promise.all(readFiles).then(async () => {
+      console.log("All files have been read and processed.");
+      const bodyData = Object.fromEntries(fileContentsMap);
+      const response = await fetch('/main:command_center:appattacc.os/import_notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bodyData),
+      });
+      try {
+        const data = await response.json();
+        if (data.message === 'success') {
+          document.getElementById('importNotesResult').textContent = 'Success!';
+          fetchNotes();
+        } else {
+          document.getElementById('importNotesResult').textContent = 'Failed to import notes.';
+        }
+      } catch (error) {
+        console.error(error);
+        document.getElementById('importNotesResult').textContent = 'Failed to import notes.';
+      }
+  
+    }).catch(error => {
+      console.error("An error occurred while reading the files:", error);
+    });
+  
+  
+  }
+  
+
+  useEffect(() => {
+    webSocket();
+    initializeTooltips();
+    fetchStatus();
+    fetchNotes();
+  }, []);
   
 
   useEffect(() => {
@@ -190,112 +306,6 @@ function App() {
 export default App
 
 
-export function searchNotes() {
-  console.log(notes_index);
-  const searchQuery = document.getElementById('notesSearch').value || null;
-  console.log(searchQuery);
-  const ids = notes_index.search(searchQuery, 15);
-  console.log(ids);
-  const notes_result = Object.fromEntries(
-    Object.entries(notes).filter(([key, value]) => ids.includes(key))
-  );
-
-  console.log(notes_result);
-
-  document.getElementById('notesResult').innerHTML =
-    `<ul>
-        ${Object.keys(notes_result).map((key) => {
-      return `<nav><a href="#/${key}" id="${key}" onClick="handleLinkClick('${key}')">${key}</a></nav>`
-    }).join('')}
-      </ul>`
-}
-
-export function handleLinkClick(id) {
-  console.log("clicked");
-  console.log(id);
-}
-
-export async function fetchNotes() {
-  document.getElementById('notesResult').textContent = 'Fetching notes and preparing index...';
-  const response = await fetch('/main:command_center:appattacc.os/notes', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  });
-  notes = await response.json();
-
-  console.log("creating index");
-  for (let key in notes) {
-    try {  // Ensure the data is a string
-      notes_index.add(key, notes[key]);
-      createNotePage(key, notes[key]);
-    } catch (error) {
-      console.error("Error adding note to index:", key);
-    }
-  }
-
-  if (Object.keys(notes).length === 0) {
-    document.getElementById('notesResult').textContent = 'No notes found. Please import.';
-  } else {
-    document.getElementById('notesResult').textContent = 'Ready to search!';
-  }
-  console.log("index created");
-}
-
-function createNotePage(key, note) {
-}
-
-export async function importNotes() {
-  document.getElementById('importNotesResult').textContent = 'Importing notes...';
-  const input = document.getElementById('folderInput');
-  const files = input.files;
-  const fileContentsMap = new Map();
-
-  const readFiles = Array.from(files).map(file => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = function (event) {
-        fileContentsMap.set(file.webkitRelativePath, event.target.result);
-        resolve();
-      };
-      reader.onerror = function (event) {
-        console.error("File could not be read! Code " + event.target.error.code);
-        reject(event.target.error);
-      };
-      reader.readAsText(file);
-    });
-  });
-
-  Promise.all(readFiles).then(async () => {
-    console.log("All files have been read and processed.");
-    const bodyData = Object.fromEntries(fileContentsMap);
-    const response = await fetch('/main:command_center:appattacc.os/import_notes', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(bodyData),
-    });
-    try {
-      const data = await response.json();
-      if (data.message === 'success') {
-        document.getElementById('importNotesResult').textContent = 'Success!';
-        fetchNotes();
-      } else {
-        document.getElementById('importNotesResult').textContent = 'Failed to import notes.';
-      }
-    } catch (error) {
-      console.error(error);
-      document.getElementById('importNotesResult').textContent = 'Failed to import notes.';
-    }
-
-  }).catch(error => {
-    console.error("An error occurred while reading the files:", error);
-  });
-
-
-}
 
 function renderNotePage(hashChangeEvent) {
   console.log(window.location.hash);
