@@ -58,12 +58,12 @@ function App() {
   return (
 <>
   <div className="tab">
-    <button id="configTab" className="tablinks" onClick="openTab(event, 'Config')">Config</button>
-    <button id="dataCenterTab" className="tablinks" onClick="openTab(event, 'Data Center')">Data Center</button>
-    <button id="importNotesTab" className="tablinks" onClick="openTab(event, 'Import Notes')">Import Notes</button>
-    <button id="notesTab" className="tablinks" onClick="openTab(event, 'Notes')">Notes</button>
+    <button id="configTab" className="tablinks" onClick={(event) => openTab(event, 'Config')}>Config</button>
+    <button id="dataCenterTab" className="tablinks" onClick={(event) => openTab(event, 'Data Center')}>Data Center</button>
+    <button id="importNotesTab" className="tablinks" onClick={(event) => openTab(event, 'Import Notes')}>Import Notes</button>
+    <button id="notesTab" className="tablinks" onClick={(event) => openTab(event, 'Notes')}>Notes</button>
   </div>
-  <body className="h-screen w-screen overflow-hidden flex-col-center items-center justify-center gap-2">
+  <div className="h-screen w-screen overflow-hidden flex-col-center items-center justify-center gap-2">
   <div id="Config" className="tabcontent">
     <h1 className="mb-2 flex-col-center">Telegram Bot Configuration</h1>
     <div className="parent-container">
@@ -130,7 +130,7 @@ function App() {
       </div>
     </div>
     <div className="parent-container flex-col-center">
-      <button onClick="submitKey()">Submit</button>
+      <button onClick={() => submitKey()}>Submit</button>
       <div className="flex-col-center">
         <span id="result"></span>
       </div>
@@ -175,13 +175,13 @@ function App() {
       <input type="text" id="notesSearch" placeholder="Search Notes" />
     </div>
     <div className="parent-container flex-col-center">
-      <button onClick="searchNotes()">Search</button>
+      <button onClick={() => searchNotes()}>Search</button>
       <div className="flex-col-center">
         <span id="notesResult"></span>
       </div>
     </div>
   </div>
-  </body>
+  </div>
 
     </>
   )
