@@ -1,35 +1,454 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 
+import FlexSearch from "../node_modules/flexsearch/dist/flexsearch.bundle.module.min.js";
+
+// Make it available globally
+window.handleLinkClick = handleLinkClick;
+window.importNotes = importNotes;
+window.fetchNotes = fetchNotes;
+window.openTab = openTab;
+
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [activeTab, setActiveTab] = useState('Config');
+  const options = {
+    charset: "latin:extra",
+    preset: 'match',
+    tokenize: 'strict',
+  }
+  const notes_index = new FlexSearch.Index(options);
+  let notes = {};
+
+  webSocket();
+  initializeTooltips();
+  fetchStatus();
+  fetchNotes();
+  
+
+  useEffect(() => {
+    // Function to handle tab clicks
+    const handleTabClick = (event, tabName) => {
+      // Prevent the default action
+      event.preventDefault();
+      
+      // Update the active tab state
+      setActiveTab(tabName);
+      
+      // Call the openTab function
+      window.openTab(event, tabName);
+    };
+
+    // Add click event listeners to all tab buttons
+    const tabButtons = document.querySelectorAll('.tablinks');
+    tabButtons.forEach(button => {
+      button.addEventListener('click', (event) => handleTabClick(event, button.textContent));
+    });
+
+    // Cleanup function to remove event listeners
+    return () => {
+      tabButtons.forEach(button => {
+        button.removeEventListener('click', (event) => handleTabClick(event, button.textContent));
+      });
+    };
+  }, []); // Empty dependency array means this effect runs once on mount
+
+  
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+<>
+  <div class="tab">
+    <button id="configTab" class="tablinks" onclick="openTab(event, 'Config')">Config</button>
+    <button id="dataCenterTab" class="tablinks" onclick="openTab(event, 'Data Center')">Data Center</button>
+    <button id="importNotesTab" class="tablinks" onclick="openTab(event, 'Import Notes')">Import Notes</button>
+    <button id="notesTab" class="tablinks" onclick="openTab(event, 'Notes')">Notes</button>
+  </div>
+  <body class="h-screen w-screen overflow-hidden flex-col-center items-center justify-center gap-2">
+  <div id="Config" class="tabcontent">
+    <h1 class="mb-2 flex-col-center">Telegram Bot Configuration</h1>
+    <div class="parent-container">
+      <span>Telegram Bot API Key</span>
+      <div class="flex-center gap-2">
+        <input type="text" id="telegramKey" placeholder="Enter Telegram Bot API Key" />
+        <button type="button" class="icon relative tooltip">
+          <span class="text-lg font-bold">?</span>
+          <span class="tooltiptext absolute invisible pointer-events-none">
+            <ul>
+              <li>- Open a Telegram chat with <a href="https://t.me/botfather" target="_blank">@BotFather</a>.</li>
+              <li>- Start a conversation and type `/newbot`.</li>
+              <li>- Follow prompts to create a new bot.</li>
+              <li>- Securely copy the HTTP API access token displayed.</li>
+              <li>- Paste the token (API key) here.</li>
+            </ul>
+          </span>
         </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+    </div>
+    <div class="parent-container">
+      <span>OpenAI API Key</span>
+      <div class="flex-center gap-2">
+        <input type="text" id="openaiKey" placeholder="Enter OpenAI API Key" />
+        <button type="button" class="icon relative tooltip">
+          <span class="text-lg font-bold">?</span>
+          <span class="tooltiptext absolute invisible pointer-events-none">
+            <ul>
+              <li>- Go to <a href="https://platform.openai.com" target="_blank">OpenAI Platform</a> and sign in /
+                sign up.</li>
+              <li>- Go to <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI API Keys</a>, and if
+                prompted, verify your phone number.</li>
+              <li>- Go to <a href="https://platform.openai.com/settings/organization/billing/overview"
+                  target="_blank">OpenAI
+                  Billing</a> page, and see if you have any credits - if not, add to
+                credits balance.</li>
+              <li>- Go back to <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI API Keys</a>,
+                and click "Create new secret key" to generate a key.</li>
+              <li>- Click through until an API key is displayed.</li>
+              <li>- Securely copy the API key.</li>
+              <li>- Paste the API key here.</li>
+            </ul>
+          </span>
+        </button>
+      </div>
+    </div>
+    <div class="parent-container">
+      <span>Groq API Key</span>
+      <div class="flex-center gap-2">
+        <input type="text" id="groqKey" placeholder="Enter Groq API Key" />
+        <button type="button" class="icon relative tooltip">
+          <span class="text-lg font-bold">?</span>
+          <span class="tooltiptext absolute invisible pointer-events-none">
+            <ul>
+              <li>- Go to <a href="https://console.groq.com/keys">Groq API Keys</a> and sign in / sign up.</li>
+              <li>- Click "Create API Key" to generate a key.</li>
+              <li>- Click through until an API key is displayed.</li>
+              <li>- Give the key a name.</li>
+              <li>- Securely copy the API key.</li>
+              <li>- Paste the API key here.</li>
+            </ul>
+          </span>
+        </button>
+      </div>
+    </div>
+    <div class="parent-container flex-col-center">
+      <button onclick="submitKey()">Submit</button>
+      <div class="flex-col-center">
+        <span id="result"></span>
+      </div>
+    </div>
+  </div>
+  <div id="Data Center" class="tabcontent">
+    <h1 class="mb-2 flex-col-center">Latest Chat Updates</h1>
+    <table id="messageContainer" class="mb-2">
+      <thead>
+        <tr>
+          <th class="table-chat-id">Chat ID</th>
+          <th class="table-message-id">Message ID</th>
+          <th class="table-date">Date</th>
+          <th class="table-username">Username</th>
+          <th class="table-text">Text</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+  <div id="Import Notes" class="tabcontent">
+    <h1 class="mb-2 flex-col-center">Import Notes</h1>
+    <div class="parent-container flex-col-center">
+      <input
+        type="file"
+        id="folderInput"
+        onChange={(e) => importNotes(e)}
+        webkitdirectory="true"
+        multiple
+        style={{ display: 'none' }}
+      />
+      <label htmlFor="folderInput" className="button">Choose Files</label>
+      <div class="flex-col-center">
+        <span id="importNotesResult"></span>
+      </div>
+    </div>
+  </div>
+  <div id="Notes" class="tabcontent">
+    <h1 class="mb-2 flex-col-center">Notes</h1>
+    <div class="flex-center gap-2">
+      <input type="text" id="notesSearch" placeholder="Search Notes" />
+    </div>
+    <div class="parent-container flex-col-center">
+      <button onclick="searchNotes()">Search</button>
+      <div class="flex-col-center">
+        <span id="notesResult"></span>
+      </div>
+    </div>
+  </div>
+  </body>
+
     </>
   )
 }
 
 export default App
+
+
+export function searchNotes() {
+  const [searchResults, setSearchResults] = useState([]);
+
+  const handleSearch = () => {
+    console.log(notes_index);
+    const searchQuery = document.getElementById('notesSearch').value || null;
+    console.log(searchQuery);
+    const ids = notes_index.search(searchQuery, 15);
+    console.log(ids);
+    const notes_result = Object.fromEntries(
+      Object.entries(notes).filter(([key, value]) => ids.includes(key))
+    );
+
+    console.log(notes_result);
+
+    setSearchResults(Object.keys(notes_result));
+  };
+
+  return (
+    <div>
+      <input type="text" id="notesSearch" placeholder="Search Notes" />
+      <button onClick={handleSearch}>Search</button>
+      <div id="notesResult">
+        <ul>
+          {searchResults.map((key) => (
+            <nav key={key}>
+              <a href={`#/${key}`} id={key} onClick={() => handleLinkClick(key)}>
+                {key}
+              </a>
+            </nav>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+export function handleLinkClick(id) {
+  console.log("clicked");
+  console.log(id);
+}
+
+export function fetchNotes() {
+  const [notesResult, setNotesResult] = useState('');
+  const [notes, setNotes] = useState({});
+  const [notesIndex, setNotesIndex] = useState(null);
+
+  useEffect(() => {
+    const fetchNotesData = async () => {
+      setNotesResult('Fetching notes and preparing index...');
+      try {
+        const response = await fetch('/main:command_center:appattacc.os/notes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        const fetchedNotes = await response.json();
+        setNotes(fetchedNotes);
+
+        console.log("creating index");
+        const index = new FlexSearch.Index(options);
+        for (let key in fetchedNotes) {
+          try {
+            index.add(key, fetchedNotes[key]);
+            createNotePage(key, fetchedNotes[key]);
+          } catch (error) {
+            console.error("Error adding note to index:", key);
+          }
+        }
+        setNotesIndex(index);
+
+        if (Object.keys(fetchedNotes).length === 0) {
+          setNotesResult('No notes found. Please import.');
+        } else {
+          setNotesResult('Ready to search!');
+        }
+        console.log("index created");
+      } catch (error) {
+        console.error("Error fetching notes:", error);
+        setNotesResult('Error fetching notes. Please try again.');
+      }
+    };
+
+    fetchNotesData();
+  }, []);
+
+  return (
+    <div>
+      <p>{notesResult}</p>
+    </div>
+  );
+}
+function createNotePage(key, note) {
+}
+
+export async function importNotes() {
+  document.getElementById('importNotesResult').textContent = 'Importing notes...';
+  const input = document.getElementById('folderInput');
+  const files = input.files;
+  const fileContentsMap = new Map();
+
+  const readFiles = Array.from(files).map(file => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        fileContentsMap.set(file.webkitRelativePath, event.target.result);
+        resolve();
+      };
+      reader.onerror = function (event) {
+        console.error("File could not be read! Code " + event.target.error.code);
+        reject(event.target.error);
+      };
+      reader.readAsText(file);
+    });
+  });
+
+  Promise.all(readFiles).then(async () => {
+    console.log("All files have been read and processed.");
+    const bodyData = Object.fromEntries(fileContentsMap);
+    const response = await fetch('/main:command_center:appattacc.os/import_notes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(bodyData),
+    });
+    try {
+      const data = await response.json();
+      if (data.message === 'success') {
+        document.getElementById('importNotesResult').textContent = 'Success!';
+        fetchNotes();
+      } else {
+        document.getElementById('importNotesResult').textContent = 'Failed to import notes.';
+      }
+    } catch (error) {
+      console.error(error);
+      document.getElementById('importNotesResult').textContent = 'Failed to import notes.';
+    }
+
+  }).catch(error => {
+    console.error("An error occurred while reading the files:", error);
+  });
+
+
+}
+
+function renderNotePage(hashChangeEvent) {
+  console.log(window.location.hash);
+  const path = window.location.hash.slice(2);
+  console.log("renderNotePage");
+  console.log(decodeURI(path));
+  const noteContent = notes[decodeURI(path)];
+  if (noteContent) {
+    var converter = new showdown.Converter({ simpleLineBreaks: true });
+    var html = converter.makeHtml(noteContent);
+    document.body.innerHTML =
+      `<h1>Note: ${decodeURI(path).replace("command_center:appattacc.os/files/", "")}</h1>
+      <div id="noteContent" style="font-size: 18px; height: 750px; width: 800px; overflow: auto;">${html}</div>`
+  }
+  else {
+    window.location.href = 'index.html?tab=notesTab';
+  }
+
+}
+
+export async function fetchStatus() {
+  const response = await fetch('/main:command_center:appattacc.os/status', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
+  try {
+    const data = await response.json();
+    if (data.telegram_key) {
+      document.getElementById('telegramKey').value = data.telegram_key;
+    }
+    if (data.openai_key) {
+      document.getElementById('openaiKey').value = data.openai_key;
+    }
+    if (data.groq_key) {
+      document.getElementById('groqKey').value = data.groq_key;
+    }
+    if (data.groq_key && data.openai_key && data.telegram_key) {
+      document.getElementById('result').innerHTML =
+        `<ul>
+          <li> Congrats! You have submitted all 3 API keys.</li>
+          <li> - Go to your Telegram <a href="https://t.me/your_new_bot" target="_blank"> @botfather</a> chat.</li>
+          <li> - Click on the link which he provided (e.g. "t.me/your_new_bot").</li>
+          <li> - Try sending it a voice or a text message and see what happens!</li>
+          <li> - Bonus: take a look at Data Center while messaging.</li>
+        </ul>`
+    }
+  } catch (error) {
+    console.error(error);
+    document.getElementById('result').textContent = 'Failed to fetch status.';
+  }
+}
+
+export function initializeTooltips() {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.tooltip').forEach(tooltip => {
+      console.log(tooltip)
+      tooltip.addEventListener('click', (e) => {
+        // e.preventDefault();
+        const tooltipText = tooltip.querySelector('.tooltiptext');
+        console.log(tooltipText)
+        tooltipText.classList.toggle('invisible');
+      });
+    });
+  });
+}
+
+export function openTab(evt, tabName) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+  document.getElementById(tabName).style.display = "block";
+  evt.currentTarget.className += " active";
+}
+
+export function webSocket() {
+  const ws = new WebSocket('wss://' + window.location.host + '/tg:command_center:appattacc.os/');
+
+  ws.onopen = function (event) {
+    console.log('Connection opened on ' + window.location.host + ':', event);
+  };
+  ws.onmessage = function (event) {
+    console.log('Message received:', event.data);
+    const data = JSON.parse(event.data); // Assuming the data is JSON formatted
+    const tableBody = document.querySelector('#messageContainer tbody');
+    const row = document.createElement('tr');
+
+    // Create a cell for each piece of data and append to the row
+    ['chat_id', 'message_id', 'date', 'username', 'text'].forEach(key => {
+      const cell = document.createElement('td');
+      if (key == 'date') {
+        // Create a new Date object using the timestamp multiplied by 1000 (to convert seconds to milliseconds)
+        const timestamp = data["NewMessageUpdate"][key];
+        const date = new Date(timestamp * 1000);
+
+        // Format the date into a human-readable string
+        const dateString = date.toLocaleDateString("en-US"); // Outputs in MM/DD/YYYY format for US locale
+        const timeString = date.toLocaleTimeString("en-US"); // Outputs time in HH:MM:SS AM/PM format for US locale
+
+        cell.textContent = dateString + " " + timeString;
+      } else {
+        cell.textContent = data["NewMessageUpdate"][key];
+      }
+      row.appendChild(cell);
+    });
+
+    tableBody.appendChild(row); // Append the row to the table body
+  };
+}
