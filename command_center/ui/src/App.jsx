@@ -7,7 +7,6 @@ import FlexSearch from "../node_modules/flexsearch/dist/flexsearch.bundle.module
 // Make it available globally
 window.handleLinkClick = handleLinkClick;
 window.importNotes = importNotes;
-window.fetchNotes = fetchNotes;
 window.openTab = openTab;
 
 
@@ -58,22 +57,22 @@ function App() {
 
   return (
 <>
-  <div class="tab">
-    <button id="configTab" class="tablinks" onclick="openTab(event, 'Config')">Config</button>
-    <button id="dataCenterTab" class="tablinks" onclick="openTab(event, 'Data Center')">Data Center</button>
-    <button id="importNotesTab" class="tablinks" onclick="openTab(event, 'Import Notes')">Import Notes</button>
-    <button id="notesTab" class="tablinks" onclick="openTab(event, 'Notes')">Notes</button>
+  <div className="tab">
+    <button id="configTab" className="tablinks" onClick="openTab(event, 'Config')">Config</button>
+    <button id="dataCenterTab" className="tablinks" onClick="openTab(event, 'Data Center')">Data Center</button>
+    <button id="importNotesTab" className="tablinks" onClick="openTab(event, 'Import Notes')">Import Notes</button>
+    <button id="notesTab" className="tablinks" onClick="openTab(event, 'Notes')">Notes</button>
   </div>
-  <body class="h-screen w-screen overflow-hidden flex-col-center items-center justify-center gap-2">
-  <div id="Config" class="tabcontent">
-    <h1 class="mb-2 flex-col-center">Telegram Bot Configuration</h1>
-    <div class="parent-container">
+  <body className="h-screen w-screen overflow-hidden flex-col-center items-center justify-center gap-2">
+  <div id="Config" className="tabcontent">
+    <h1 className="mb-2 flex-col-center">Telegram Bot Configuration</h1>
+    <div className="parent-container">
       <span>Telegram Bot API Key</span>
-      <div class="flex-center gap-2">
+      <div className="flex-center gap-2">
         <input type="text" id="telegramKey" placeholder="Enter Telegram Bot API Key" />
-        <button type="button" class="icon relative tooltip">
-          <span class="text-lg font-bold">?</span>
-          <span class="tooltiptext absolute invisible pointer-events-none">
+        <button type="button" className="icon relative tooltip">
+          <span className="text-lg font-bold">?</span>
+          <span className="tooltiptext absolute invisible pointer-events-none">
             <ul>
               <li>- Open a Telegram chat with <a href="https://t.me/botfather" target="_blank">@BotFather</a>.</li>
               <li>- Start a conversation and type `/newbot`.</li>
@@ -85,13 +84,13 @@ function App() {
         </button>
       </div>
     </div>
-    <div class="parent-container">
+    <div className="parent-container">
       <span>OpenAI API Key</span>
-      <div class="flex-center gap-2">
+      <div className="flex-center gap-2">
         <input type="text" id="openaiKey" placeholder="Enter OpenAI API Key" />
-        <button type="button" class="icon relative tooltip">
-          <span class="text-lg font-bold">?</span>
-          <span class="tooltiptext absolute invisible pointer-events-none">
+        <button type="button" className="icon relative tooltip">
+          <span className="text-lg font-bold">?</span>
+          <span className="tooltiptext absolute invisible pointer-events-none">
             <ul>
               <li>- Go to <a href="https://platform.openai.com" target="_blank">OpenAI Platform</a> and sign in /
                 sign up.</li>
@@ -111,13 +110,13 @@ function App() {
         </button>
       </div>
     </div>
-    <div class="parent-container">
+    <div className="parent-container">
       <span>Groq API Key</span>
-      <div class="flex-center gap-2">
+      <div className="flex-center gap-2">
         <input type="text" id="groqKey" placeholder="Enter Groq API Key" />
-        <button type="button" class="icon relative tooltip">
-          <span class="text-lg font-bold">?</span>
-          <span class="tooltiptext absolute invisible pointer-events-none">
+        <button type="button" className="icon relative tooltip">
+          <span className="text-lg font-bold">?</span>
+          <span className="tooltiptext absolute invisible pointer-events-none">
             <ul>
               <li>- Go to <a href="https://console.groq.com/keys">Groq API Keys</a> and sign in / sign up.</li>
               <li>- Click "Create API Key" to generate a key.</li>
@@ -130,32 +129,32 @@ function App() {
         </button>
       </div>
     </div>
-    <div class="parent-container flex-col-center">
-      <button onclick="submitKey()">Submit</button>
-      <div class="flex-col-center">
+    <div className="parent-container flex-col-center">
+      <button onClick="submitKey()">Submit</button>
+      <div className="flex-col-center">
         <span id="result"></span>
       </div>
     </div>
   </div>
-  <div id="Data Center" class="tabcontent">
-    <h1 class="mb-2 flex-col-center">Latest Chat Updates</h1>
-    <table id="messageContainer" class="mb-2">
+  <div id="Data Center" className="tabcontent">
+    <h1 className="mb-2 flex-col-center">Latest Chat Updates</h1>
+    <table id="messageContainer" className="mb-2">
       <thead>
         <tr>
-          <th class="table-chat-id">Chat ID</th>
-          <th class="table-message-id">Message ID</th>
-          <th class="table-date">Date</th>
-          <th class="table-username">Username</th>
-          <th class="table-text">Text</th>
+          <th className="table-chat-id">Chat ID</th>
+          <th className="table-message-id">Message ID</th>
+          <th className="table-date">Date</th>
+          <th className="table-username">Username</th>
+          <th className="table-text">Text</th>
         </tr>
       </thead>
       <tbody>
       </tbody>
     </table>
   </div>
-  <div id="Import Notes" class="tabcontent">
-    <h1 class="mb-2 flex-col-center">Import Notes</h1>
-    <div class="parent-container flex-col-center">
+  <div id="Import Notes" className="tabcontent">
+    <h1 className="mb-2 flex-col-center">Import Notes</h1>
+    <div className="parent-container flex-col-center">
       <input
         type="file"
         id="folderInput"
@@ -165,19 +164,19 @@ function App() {
         style={{ display: 'none' }}
       />
       <label htmlFor="folderInput" className="button">Choose Files</label>
-      <div class="flex-col-center">
+      <div className="flex-col-center">
         <span id="importNotesResult"></span>
       </div>
     </div>
   </div>
-  <div id="Notes" class="tabcontent">
-    <h1 class="mb-2 flex-col-center">Notes</h1>
-    <div class="flex-center gap-2">
+  <div id="Notes" className="tabcontent">
+    <h1 className="mb-2 flex-col-center">Notes</h1>
+    <div className="flex-center gap-2">
       <input type="text" id="notesSearch" placeholder="Search Notes" />
     </div>
-    <div class="parent-container flex-col-center">
-      <button onclick="searchNotes()">Search</button>
-      <div class="flex-col-center">
+    <div className="parent-container flex-col-center">
+      <button onClick="searchNotes()">Search</button>
+      <div className="flex-col-center">
         <span id="notesResult"></span>
       </div>
     </div>
@@ -192,97 +191,58 @@ export default App
 
 
 export function searchNotes() {
-  const [searchResults, setSearchResults] = useState([]);
-
-  const handleSearch = () => {
-    console.log(notes_index);
-    const searchQuery = document.getElementById('notesSearch').value || null;
-    console.log(searchQuery);
-    const ids = notes_index.search(searchQuery, 15);
-    console.log(ids);
-    const notes_result = Object.fromEntries(
-      Object.entries(notes).filter(([key, value]) => ids.includes(key))
-    );
-
-    console.log(notes_result);
-
-    setSearchResults(Object.keys(notes_result));
-  };
-
-  return (
-    <div>
-      <input type="text" id="notesSearch" placeholder="Search Notes" />
-      <button onClick={handleSearch}>Search</button>
-      <div id="notesResult">
-        <ul>
-          {searchResults.map((key) => (
-            <nav key={key}>
-              <a href={`#/${key}`} id={key} onClick={() => handleLinkClick(key)}>
-                {key}
-              </a>
-            </nav>
-          ))}
-        </ul>
-      </div>
-    </div>
+  console.log(notes_index);
+  const searchQuery = document.getElementById('notesSearch').value || null;
+  console.log(searchQuery);
+  const ids = notes_index.search(searchQuery, 15);
+  console.log(ids);
+  const notes_result = Object.fromEntries(
+    Object.entries(notes).filter(([key, value]) => ids.includes(key))
   );
+
+  console.log(notes_result);
+
+  document.getElementById('notesResult').innerHTML =
+    `<ul>
+        ${Object.keys(notes_result).map((key) => {
+      return `<nav><a href="#/${key}" id="${key}" onClick="handleLinkClick('${key}')">${key}</a></nav>`
+    }).join('')}
+      </ul>`
 }
+
 export function handleLinkClick(id) {
   console.log("clicked");
   console.log(id);
 }
 
-export function fetchNotes() {
-  const [notesResult, setNotesResult] = useState('');
-  const [notes, setNotes] = useState({});
-  const [notesIndex, setNotesIndex] = useState(null);
+export async function fetchNotes() {
+  document.getElementById('notesResult').textContent = 'Fetching notes and preparing index...';
+  const response = await fetch('/main:command_center:appattacc.os/notes', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
+  notes = await response.json();
 
-  useEffect(() => {
-    const fetchNotesData = async () => {
-      setNotesResult('Fetching notes and preparing index...');
-      try {
-        const response = await fetch('/main:command_center:appattacc.os/notes', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        const fetchedNotes = await response.json();
-        setNotes(fetchedNotes);
+  console.log("creating index");
+  for (let key in notes) {
+    try {  // Ensure the data is a string
+      notes_index.add(key, notes[key]);
+      createNotePage(key, notes[key]);
+    } catch (error) {
+      console.error("Error adding note to index:", key);
+    }
+  }
 
-        console.log("creating index");
-        const index = new FlexSearch.Index(options);
-        for (let key in fetchedNotes) {
-          try {
-            index.add(key, fetchedNotes[key]);
-            createNotePage(key, fetchedNotes[key]);
-          } catch (error) {
-            console.error("Error adding note to index:", key);
-          }
-        }
-        setNotesIndex(index);
-
-        if (Object.keys(fetchedNotes).length === 0) {
-          setNotesResult('No notes found. Please import.');
-        } else {
-          setNotesResult('Ready to search!');
-        }
-        console.log("index created");
-      } catch (error) {
-        console.error("Error fetching notes:", error);
-        setNotesResult('Error fetching notes. Please try again.');
-      }
-    };
-
-    fetchNotesData();
-  }, []);
-
-  return (
-    <div>
-      <p>{notesResult}</p>
-    </div>
-  );
+  if (Object.keys(notes).length === 0) {
+    document.getElementById('notesResult').textContent = 'No notes found. Please import.';
+  } else {
+    document.getElementById('notesResult').textContent = 'Ready to search!';
+  }
+  console.log("index created");
 }
+
 function createNotePage(key, note) {
 }
 
