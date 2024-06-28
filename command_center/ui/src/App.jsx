@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import Popup from './components/Popup'
+import TreeNode from './components/TreeNode'
+import { Tree } from 'react-arborist';
 import FlexSearch from "../node_modules/flexsearch/dist/flexsearch.bundle.module.min.js";
 
 window.handleLinkClick = (id) => {
@@ -16,7 +18,6 @@ function App() {
   const [popupContent, setPopupContent] = useState('');
   const [messages, setMessages] = useState([]);
 
-  console.log(notes);
 
   const options = {
     charset: "latin:extra",
@@ -34,6 +35,112 @@ function App() {
   const lastBackupSize = "1gb";
   const notesBackupProvider = 'sour-cabbage.os';
 
+  function createMockArboristData() {
+    return [
+      {
+        id: "root",
+        name: "Root",
+        children: [
+          {
+            id: "documents",
+            name: "Documents",
+            children: [
+              {
+                id: "work",
+                name: "Work",
+                children: [
+                  {
+                    id: "project-a",
+                    name: "Project A",
+                    children: [
+                      { id: "proposal.docx", name: "proposal.docx" },
+                      { id: "budget.xlsx", name: "budget.xlsx" }
+                    ]
+                  },
+                  {
+                    id: "project-b",
+                    name: "Project B",
+                    children: [
+                      { id: "requirements.txt", name: "requirements.txt" },
+                      { id: "timeline.pdf", name: "timeline.pdf" }
+                    ]
+                  }
+                ]
+              },
+              {
+                id: "personal",
+                name: "Personal",
+                children: [
+                  {
+                    id: "recipes",
+                    name: "Recipes",
+                    children: [
+                      { id: "pasta.md", name: "pasta.md" },
+                      { id: "smoothie.md", name: "smoothie.md" }
+                    ]
+                  },
+                  {
+                    id: "travel",
+                    name: "Travel",
+                    children: [
+                      { id: "packing-list.txt", name: "packing-list.txt" },
+                      { id: "itinerary.pdf", name: "itinerary.pdf" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            id: "pictures",
+            name: "Pictures",
+            children: [
+              {
+                id: "vacation-2023",
+                name: "Vacation 2023",
+                children: [
+                  { id: "beach.jpg", name: "beach.jpg" },
+                  { id: "mountains.jpg", name: "mountains.jpg" }
+                ]
+              },
+              {
+                id: "family",
+                name: "Family",
+                children: [
+                  { id: "birthday.png", name: "birthday.png" },
+                  { id: "graduation.jpg", name: "graduation.jpg" }
+                ]
+              }
+            ]
+          },
+          {
+            id: "music",
+            name: "Music",
+            children: [
+              {
+                id: "rock",
+                name: "Rock",
+                children: [
+                  { id: "classic_rock_playlist.m3u", name: "classic_rock_playlist.m3u" }
+                ]
+              },
+              {
+                id: "jazz",
+                name: "Jazz",
+                children: [
+                  { id: "smooth_jazz_collection.m3u", name: "smooth_jazz_collection.m3u" }
+                ]
+              }
+            ]
+          },
+          { id: "notes.txt", name: "notes.txt" },
+          { id: "todo.md", name: "todo.md" }
+        ]
+      }
+    ];
+  }
+  const [treeData, setTreeData] = useState(createMockArboristData());
+  
   useEffect(() => {
     webSocket();
     initializeTooltips();
@@ -377,7 +484,20 @@ function App() {
         </div>
       </div>
 
+      <div className="notes-tree" style={{ height: "400px", width: "300px" }}>
+        <Tree
+          initialData={treeData}
+          openByDefault={true}
+          width={300}
+          height={400}
+          indent={24}
+          rowHeight={36}
+          overscanCount={1}
+        >
 
+    {TreeNode}
+  </Tree>
+</div>
 
       
     </div>
