@@ -9,3 +9,7 @@
 */process_env
 
 /command_center/!pkg/*.wasm
+/command_center/pkg/ui/*
+/command_center/pkg/node_modules
+/command_center/pkg/dist
+
