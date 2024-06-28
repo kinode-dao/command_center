@@ -8,12 +8,14 @@ window.handleLinkClick = (id) => {
 
 
 function App() {
-  const [activeTab, setActiveTab] = useState('Config');
+  const [activeTab, setActiveTab] = useState('Notes');
   const [notesResult, setNotesResult] = useState(''); 
   const [notes, setNotes] = useState({}); // Add this line
   const [notesIndex, setNotesIndex] = useState(null); // Add this line
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupContent, setPopupContent] = useState('');
+  const [messages, setMessages] = useState([]);
+
 
   const options = {
     charset: "latin:extra",
@@ -51,6 +53,23 @@ function App() {
       });
     };
   }, []); 
+
+  const webSocket = () => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.port === '5173' ? 'localhost:8080' : window.location.host;
+    const ws = new WebSocket(`${protocol}//${host}/tg:command_center:appattacc.os/`);
+
+    ws.onopen = function (event) {
+      console.log('Connection opened on ' + window.location.host + ':', event);
+    };
+
+    ws.onmessage = function (event) {
+      console.log('Message received:', event.data);
+      const data = JSON.parse(event.data);
+      setMessages(prevMessages => [...prevMessages, data.NewMessageUpdate]);
+    };
+  }
+
 
   const handleTooltipClick = (content) => {
     setPopupContent(content);
@@ -283,14 +302,24 @@ function App() {
     <table id="messageContainer" className="mb-2">
       <thead>
         <tr>
-          <th className="table-chat-id">Chat ID</th>
+          {/* <th className="table-chat-id">Chat ID</th>
           <th className="table-message-id">Message ID</th>
-          <th className="table-date">Date</th>
+          <th className="table-date">Date</th> */}
           <th className="table-username">Username</th>
           <th className="table-text">Text</th>
         </tr>
       </thead>
       <tbody>
+      {messages.map((message, index) => (
+              <tr key={index}>
+                {/* <td>{message.chat_id}</td>
+                <td>{message.message_id}</td>
+                <td>{formatDate(message.date)}</td> */}
+                <td>{message.username}</td>
+                <td>{message.text}</td>
+              </tr>
+            ))}
+
       </tbody>
     </table>
   </div>
@@ -382,40 +411,11 @@ export function initializeTooltips() {
   });
 }
 
-export function webSocket() {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = window.location.port === '5173' ? 'localhost:8080' : window.location.host;
-  const ws = new WebSocket(`${protocol}//${host}/tg:command_center:appattacc.os/`);
-  ws.onopen = function (event) {
-    console.log('Connection opened on ' + window.location.host + ':', event);
-  };
-  ws.onmessage = function (event) {
-    console.log('Message received:', event.data);
-    const data = JSON.parse(event.data); // Assuming the data is JSON formatted
-    const tableBody = document.querySelector('#messageContainer tbody');
-    const row = document.createElement('tr');
-
-    // Create a cell for each piece of data and append to the row
-    ['chat_id', 'message_id', 'date', 'username', 'text'].forEach(key => {
-      const cell = document.createElement('td');
-      if (key == 'date') {
-        // Create a new Date object using the timestamp multiplied by 1000 (to convert seconds to milliseconds)
-        const timestamp = data["NewMessageUpdate"][key];
-        const date = new Date(timestamp * 1000);
-
-        // Format the date into a human-readable string
-        const dateString = date.toLocaleDateString("en-US"); // Outputs in MM/DD/YYYY format for US locale
-        const timeString = date.toLocaleTimeString("en-US"); // Outputs time in HH:MM:SS AM/PM format for US locale
-
-        cell.textContent = dateString + " " + timeString;
-      } else {
-        cell.textContent = data["NewMessageUpdate"][key];
-      }
-      row.appendChild(cell);
-    });
-
-    tableBody.appendChild(row); // Append the row to the table body
-  };
+function formatDate(timestamp) {
+  const date = new Date(timestamp * 1000);
+  const dateString = date.toLocaleDateString("en-US");
+  const timeString = date.toLocaleTimeString("en-US");
+  return `${dateString} ${timeString}`;
 }
 
 export function toggleTooltipVisibility() {
