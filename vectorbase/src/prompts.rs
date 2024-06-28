@@ -1,4 +1,5 @@
 // TODO: Maybe add the addresses to interfaces?
+// TODO: This is currently overfitted to 'talk to kinode' scenario, but we should be able to make this a database of RAG functionality. 
 pub const INTERFACE_CONTEXT: &str = r#"
 These are the addresses: 
 ```
