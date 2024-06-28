@@ -12,4 +12,7 @@
 /command_center/pkg/ui/*
 /command_center/pkg/node_modules
 /command_center/pkg/dist
+/command_center/ui/node_modules
+/command_center/ui/package-lock.json
+/command_center/ui/yarn.lock
 
