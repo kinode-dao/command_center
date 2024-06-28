@@ -18,6 +18,8 @@ use rag::*;
 
 mod prompts;
 
+pub const DEBUG: bool = false;
+
 wit_bindgen::generate!({
     path: "target/wit",
     world: "process-v0",
@@ -54,13 +56,15 @@ fn init(our: Address) {
 
     let mut state = State::fetch().unwrap_or_default();
 
-    match test_rag_functionality(&mut state) {
-        Ok(result) => {
-            println!("RAG functionality test passed");
-            println!("Test result: {}", result);
-        },
-        Err(e) => {
-            println!("RAG functionality test failed: {:?}", e);
+    if DEBUG {
+        match test_rag_functionality(&mut state) {
+            Ok(result) => {
+                println!("RAG functionality test passed");
+                println!("Test result: {}", result);
+            }
+            Err(e) => {
+                println!("RAG functionality test failed: {:?}", e);
+            }
         }
     }
 
