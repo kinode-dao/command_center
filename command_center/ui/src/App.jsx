@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
 import './App.css'
-
+import Popup from './components/Popup'
 import FlexSearch from "../node_modules/flexsearch/dist/flexsearch.bundle.module.min.js";
 
 window.handleLinkClick = (id) => {
-  console.log("clicked");
-  console.log(id);
 }
 
 
@@ -15,12 +12,50 @@ function App() {
   const [notesResult, setNotesResult] = useState(''); 
   const [notes, setNotes] = useState({}); // Add this line
   const [notesIndex, setNotesIndex] = useState(null); // Add this line
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [popupContent, setPopupContent] = useState('');
 
   const options = {
     charset: "latin:extra",
     preset: 'match',
     tokenize: 'strict',
   }
+
+  useEffect(() => {
+    webSocket();
+    initializeTooltips();
+    fetchStatus();
+    fetchNotes();
+  }, []);
+  
+  useEffect(() => {
+    // Function to handle tab clicks
+    const handleTabClick = (event, tabName) => {
+      // Prevent the default action
+      event.preventDefault();
+      
+      // Update the active tab state
+      setActiveTab(tabName);
+    };
+
+    // Add click event listeners to all tab buttons
+    const tabButtons = document.querySelectorAll('.tablinks');
+    tabButtons.forEach(button => {
+      button.addEventListener('click', (event) => handleTabClick(event, button.textContent));
+    });
+
+    // Cleanup function to remove event listeners
+    return () => {
+      tabButtons.forEach(button => {
+        button.removeEventListener('click', (event) => handleTabClick(event, button.textContent));
+      });
+    };
+  }, []); 
+
+  const handleTooltipClick = (content) => {
+    setPopupContent(content);
+    setIsPopupOpen(true);
+  };
 
   const fetchNotes = async () => {
     setNotesResult('Fetching notes and preparing index...');
@@ -47,7 +82,6 @@ function App() {
       for (let key in fetchedNotes) {
         try {
           newIndex.add(key, fetchedNotes[key]);
-          createNotePage(key, fetchedNotes[key]);
         } catch (error) {
           console.error("Error adding note to index:", key);
         }
@@ -81,28 +115,9 @@ function App() {
     document.getElementById('notesResult').innerHTML =
       `<ul>
           ${Object.keys(notes_result).map((key) => {
-        return `<nav><a href="#/${key}" id="${key}" onClick="handleLinkClick('${key}')">${key}</a></nav>`
+        return `<nav><a id="${key}" onClick="handleLinkClick('${key}')">${key}</a></nav>`
       }).join('')}
         </ul>`
-  }
-  
-  
-  const openTab = (evt, tabName) => {
-    var i, tabcontent, tablinks;
-    tabcontent = document.getElementsByClassName("tabcontent");
-    for (i = 0; i < tabcontent.length; i++) {
-      tabcontent[i].style.display = "none";
-    }
-    tablinks = document.getElementsByClassName("tablinks");
-    for (i = 0; i < tablinks.length; i++) {
-      tablinks[i].className = tablinks[i].className.replace(" active", "");
-    }
-    document.getElementById(tabName).style.display = "block";
-    evt.currentTarget.className += " active";
-  }
-  
-  
-  function createNotePage(key, note) {
   }
   
   const importNotes = async () => {
@@ -156,51 +171,30 @@ function App() {
   
   }
   
-
   useEffect(() => {
-    webSocket();
-    initializeTooltips();
-    fetchStatus();
-    fetchNotes();
-  }, []);
-  
+    const tabContents = document.getElementsByClassName("tabcontent");
+    const tabLinks = document.getElementsByClassName("tablinks");
 
-  useEffect(() => {
-    // Function to handle tab clicks
-    const handleTabClick = (event, tabName) => {
-      // Prevent the default action
-      event.preventDefault();
-      
-      // Update the active tab state
-      setActiveTab(tabName);
-      
-      // // Call the openTab function
-      openTab(event, tabName);
-    };
-
-    // Add click event listeners to all tab buttons
-    const tabButtons = document.querySelectorAll('.tablinks');
-    tabButtons.forEach(button => {
-      button.addEventListener('click', (event) => handleTabClick(event, button.textContent));
+    Array.from(tabContents).forEach((content) => {
+      content.style.display = content.id === activeTab ? "block" : "none";
     });
 
-    // Cleanup function to remove event listeners
-    return () => {
-      tabButtons.forEach(button => {
-        button.removeEventListener('click', (event) => handleTabClick(event, button.textContent));
-      });
-    };
-  }, []); // Empty dependency array means this effect runs once on mount
-
+    Array.from(tabLinks).forEach((link) => {
+      if (link.id === `${activeTab}Link`) {
+        link.className = link.className + " active";
+      } else {
+        link.className = link.className.replace(" active", "");
+      }
+    });
+  }, [activeTab]);
   
-
   return (
 <>
   <div className="tab">
-    <button id="configTab" className="tablinks" onClick={(event) => openTab(event, 'Config')}>Config</button>
-    <button id="dataCenterTab" className="tablinks" onClick={(event) => openTab(event, 'Data Center')}>Data Center</button>
-    <button id="importNotesTab" className="tablinks" onClick={(event) => openTab(event, 'Import Notes')}>Import Notes</button>
-    <button id="notesTab" className="tablinks" onClick={(event) => openTab(event, 'Notes')}>Notes</button>
+    <button id="configTab" className="tablinks" onClick={() => setActiveTab('Config')}>Config</button>
+    <button id="dataCenterTab" className="tablinks" onClick={() => setActiveTab('Data Center')}>Data Center</button>
+    <button id="importNotesTab" className="tablinks" onClick={() => setActiveTab('Import Notes')}>Import Notes</button>
+    <button id="notesTab" className="tablinks" onClick={() => setActiveTab('Notes')}>Notes</button>
   </div>
   <div className="h-screen w-screen overflow-hidden flex-col-center items-center justify-center gap-2">
   <div id="Config" className="tabcontent">
@@ -209,9 +203,10 @@ function App() {
       <span>Telegram Bot API Key</span>
       <div className="flex-center gap-2">
         <input type="text" id="telegramKey" placeholder="Enter Telegram Bot API Key" />
-        <button type="button" className="icon relative tooltip">
-          <span className="text-lg font-bold">?</span>
-          <span className="tooltiptext absolute invisible pointer-events-none">
+        <button
+          type="button"
+          className="icon relative tooltip"
+          onClick={() => handleTooltipClick(
             <ul>
               <li>- Open a Telegram chat with <a href="https://t.me/botfather" target="_blank">@BotFather</a>.</li>
               <li>- Start a conversation and type `/newbot`.</li>
@@ -219,7 +214,9 @@ function App() {
               <li>- Securely copy the HTTP API access token displayed.</li>
               <li>- Paste the token (API key) here.</li>
             </ul>
-          </span>
+          )}
+        >
+          <span className="text-lg font-bold">?</span>
         </button>
       </div>
     </div>
@@ -227,9 +224,10 @@ function App() {
       <span>OpenAI API Key</span>
       <div className="flex-center gap-2">
         <input type="text" id="openaiKey" placeholder="Enter OpenAI API Key" />
-        <button type="button" className="icon relative tooltip">
-          <span className="text-lg font-bold">?</span>
-          <span className="tooltiptext absolute invisible pointer-events-none">
+        <button
+          type="button"
+          className="icon relative tooltip"
+          onClick={() => handleTooltipClick(
             <ul>
               <li>- Go to <a href="https://platform.openai.com" target="_blank">OpenAI Platform</a> and sign in /
                 sign up.</li>
@@ -245,7 +243,9 @@ function App() {
               <li>- Securely copy the API key.</li>
               <li>- Paste the API key here.</li>
             </ul>
-          </span>
+          )}
+        >
+          <span className="text-lg font-bold">?</span>
         </button>
       </div>
     </div>
@@ -253,9 +253,10 @@ function App() {
       <span>Groq API Key</span>
       <div className="flex-center gap-2">
         <input type="text" id="groqKey" placeholder="Enter Groq API Key" />
-        <button type="button" className="icon relative tooltip">
-          <span className="text-lg font-bold">?</span>
-          <span className="tooltiptext absolute invisible pointer-events-none">
+        <button
+          type="button"
+          className="icon relative tooltip"
+          onClick={() => handleTooltipClick(
             <ul>
               <li>- Go to <a href="https://console.groq.com/keys">Groq API Keys</a> and sign in / sign up.</li>
               <li>- Click "Create API Key" to generate a key.</li>
@@ -264,7 +265,9 @@ function App() {
               <li>- Securely copy the API key.</li>
               <li>- Paste the API key here.</li>
             </ul>
-          </span>
+          )}
+        >
+          <span className="text-lg font-bold">?</span>
         </button>
       </div>
     </div>
@@ -321,35 +324,15 @@ function App() {
     </div>
   </div>
   </div>
+  <Popup isOpen={isPopupOpen} onClose={() => setIsPopupOpen(false)}>
+        {popupContent}
+      </Popup>
 
     </>
   )
 }
 
 export default App
-
-
-
-function renderNotePage(hashChangeEvent) {
-  console.log(window.location.hash);
-  const path = window.location.hash.slice(2);
-  console.log("renderNotePage");
-  console.log(decodeURI(path));
-  const noteContent = notes[decodeURI(path)];
-  if (noteContent) {
-    var converter = new showdown.Converter({ simpleLineBreaks: true });
-    var html = converter.makeHtml(noteContent);
-    document.body.innerHTML =
-      `<h1>Note: ${decodeURI(path).replace("command_center:appattacc.os/files/", "")}</h1>
-      <div id="noteContent" style="font-size: 18px; height: 750px; width: 800px; overflow: auto;">${html}</div>`
-  }
-  else {
-    window.location.href = 'index.html?tab=notesTab';
-  }
-
-}
-
-
 
 export async function fetchStatus() {
   const response = await fetch('/main:command_center:appattacc.os/status', {
@@ -433,4 +416,46 @@ export function webSocket() {
 
     tableBody.appendChild(row); // Append the row to the table body
   };
+}
+
+export function toggleTooltipVisibility() {
+  document.addEventListener('DOMContentLoaded', () => {
+      const tooltips = document.querySelectorAll('.tooltip');
+      tooltips.forEach(tooltip => {
+          tooltip.addEventListener('click', () => {
+              const tooltipText = tooltip.querySelector('.tooltiptext');
+              tooltipText.classList.toggle('visible');
+          });
+      });
+  });
+}
+
+export async function submitKey() {
+  const telegramKey = document.getElementById('telegramKey').value || null;
+  const openaiKey = document.getElementById('openaiKey').value || null;
+  const groqKey = document.getElementById('groqKey').value || null;
+  const bodyData = {
+      telegram_key: telegramKey,
+      openai_key: openaiKey,
+      groq_key: groqKey
+  };
+  const response = await fetch('/main:command_center:appattacc.os/submit_config', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(bodyData),
+  });
+  try {
+      const data = await response.json();
+      if (data.message === 'success') {
+          document.getElementById('result').textContent = 'Success!';
+          fetchStatus();
+      } else {
+          document.getElementById('result').textContent = 'Failed to submit key.';
+      }
+  } catch (error) {
+      console.error(error);
+      document.getElementById('result').textContent = 'Failed to submit key.';
+  }
 }
