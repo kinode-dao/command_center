@@ -56,6 +56,7 @@ fn init(our: Address) {
 
     let mut state = State::fetch().unwrap_or_default();
 
+    // TODO: Zena: Entrypoint: Check those weird debugs, clean them up
     if DEBUG {
         match test_rag_functionality(&mut state) {
             Ok(result) => {
