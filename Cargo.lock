@@ -1497,14 +1497,14 @@ version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e19e8d5c34a3e0e2223db8e060f9e8264aeeb5c5fc64a4ee9965c062211c024b"
 dependencies = [
- "log 0.4.21",
+ "log 0.4.22",
 ]
 
 [[package]]
 name = "log"
-version = "0.4.21"
+version = "0.4.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
+checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
 name = "matches"
@@ -1580,7 +1580,7 @@ dependencies = [
  "httparse",
  "hyper",
  "iron",
- "log 0.4.21",
+ "log 0.4.22",
  "mime 0.3.17",
  "mime_guess 2.0.4",
  "nickel",
@@ -1625,9 +1625,9 @@ dependencies = [
 
 [[package]]
 name = "num-bigint"
-version = "0.4.5"
+version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c165a9ab64cf766f73521c0dd2cfdff64f488b8f0b3e621face3462d3db536d7"
+checksum = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9"
 dependencies = [
  "num-integer",
  "num-traits",
@@ -2561,7 +2561,7 @@ dependencies = [
  "ascii",
  "chrono",
  "chunked_transfer",
- "log 0.4.21",
+ "log 0.4.22",
  "url 1.7.2",
 ]
 
@@ -2640,7 +2640,7 @@ version = "0.1.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3523ab5a71916ccf420eebdf5521fcef02141234bbc0b8a49f2fdc4544364ef"
 dependencies = [
- "log 0.4.21",
+ "log 0.4.22",
  "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
@@ -2851,7 +2851,7 @@ dependencies = [
 [[package]]
 name = "vectorbase_interface"
 version = "0.1.0"
-source = "git+https://github.com/kinode-dao/command_center?branch=vectorbase_interface#b6106549eb11b5a237c829b04c2bf32c3658df30"
+source = "git+https://github.com/kinode-dao/command_center?branch=vectorbase_interface#a9258d815ebdf57c53fa3d39e91b801969c55e20"
 dependencies = [
  "serde",
  "serde_derive",
@@ -2908,7 +2908,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "614d787b966d3989fa7bb98a654e369c762374fd3213d212cfc0251257e747da"
 dependencies = [
  "bumpalo",
- "log 0.4.21",
+ "log 0.4.22",
  "once_cell",
  "proc-macro2",
  "quote",
@@ -3263,7 +3263,7 @@ dependencies = [
  "anyhow",
  "bitflags 2.6.0",
  "indexmap",
- "log 0.4.21",
+ "log 0.4.22",
  "serde",
  "serde_derive",
  "serde_json",
@@ -3282,7 +3282,7 @@ dependencies = [
  "anyhow",
  "bitflags 2.6.0",
  "indexmap",
- "log 0.4.21",
+ "log 0.4.22",
  "serde",
  "serde_derive",
  "serde_json",
@@ -3301,7 +3301,7 @@ dependencies = [
  "anyhow",
  "id-arena",
  "indexmap",
- "log 0.4.21",
+ "log 0.4.22",
  "semver 1.0.23",
  "serde",
  "serde_derive",
@@ -3318,7 +3318,7 @@ dependencies = [
  "anyhow",
  "id-arena",
  "indexmap",
- "log 0.4.21",
+ "log 0.4.22",
  "semver 1.0.23",
  "serde",
  "serde_derive",
