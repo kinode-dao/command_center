@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-
 pub mod vectorbase {
+    use serde::{Deserialize, Serialize};
+
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub enum Request {
         ListDatabases,
@@ -25,6 +25,8 @@ pub mod vectorbase {
 }
 
 pub mod rag {
+    use serde::{Deserialize, Serialize};
+
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub enum Request {
         RAG {prompt: String, rag_type: RAGType},
@@ -36,6 +38,7 @@ pub mod rag {
         Error(String),
     }
 
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub enum RAGType {
         Naive,
         Vector,
