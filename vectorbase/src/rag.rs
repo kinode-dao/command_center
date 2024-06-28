@@ -1,5 +1,5 @@
 use crate::structs::State;
-use kinode_process_lib::{Request, Response, http};
+use kinode_process_lib::{Request, Response, http, println};
 use vectorbase_interface::rag::{Request as RAGRequest, Response as RAGResponse, RAGType};
 use anyhow::Result;
 use url::Url;
@@ -12,17 +12,22 @@ use crate::prompts::{rag_instruction, INTERFACE_CONTEXT};
 pub fn handle_rag_request(state: &mut State, request: RAGRequest) -> anyhow::Result<()> {
     match request {
         RAGRequest::RAG { prompt, rag_type } => {
-            generate_rag_response(state, prompt, rag_type)
+            if let Err(e) = generate_rag_response(state, prompt, rag_type) {
+                println!("Error generating RAG response: {:?}", e);
+                return Err(e);
+            } else {
+                Ok(())
+            }
         }
         // Add other RAG request types as needed
     }
 }
 
-fn generate_rag_response(
+pub fn generate_rag_response(
     state: &mut State,
     prompt: String,
     rag_type: RAGType,
-) -> Result<()> {
+) -> Result<String> {
     println!("Starting generate_rag_response");
 
     // Ensure it's naive RAG type (ignore other types for now)
@@ -63,7 +68,7 @@ fn generate_rag_response(
         return Err(anyhow::anyhow!("Failed to parse LLM response"));
     };
 
-    println!("LLM response parsed successfully");
+    println!("Claude answer is {:?}", chat);
 
     let content = chat.content.first()
         .map(|content| content.text.clone())
@@ -79,6 +84,7 @@ fn generate_rag_response(
         });
 
     println!("URLs parsed: {} found", urls.len());
+    println!("Urls are {:?}", urls);
 
     // Fetch content for each URL
     let mut combined_content = String::new();
@@ -94,40 +100,39 @@ fn generate_rag_response(
             }
         }
     }
+    println!("Combined content is {:?}", combined_content);
+    Ok("temp".to_string())
 
-    println!("All URLs processed");
+    // // Create and send the RAG response
+    // let rag_response = RAGResponse::RAG(combined_content.clone());
+    // println!("RAG response created");
 
-    // Create and send the RAG response
-    let rag_response = RAGResponse::RAG(combined_content);
-    println!("RAG response created");
+    // let response = Response::new()
+    //     .body(serde_json::to_vec(&rag_response)?)
+    //     .send();
 
-    let response = Response::new()
-        .body(serde_json::to_vec(&rag_response)?)
-        .send();
+    // println!("RAG response sent");
 
-    println!("RAG response sent");
-
-    Ok(())
+    // Ok(combined_content)
 }
 
 fn fetch_github_content(url: &str) -> Result<String> {
     println!("Starting fetch_github_content for URL: {}", url);
 
-    let url = Url::parse(url)?;
-    println!("URL parsed successfully");
+    // Convert GitHub URL to raw content URL
+    let raw_url = url.replace("github.com", "raw.githubusercontent.com")
+                     .replace("/blob/", "/");
 
-    let headers = Some(HashMap::from([
-        ("Accept".to_string(), "application/vnd.github.v3.raw".to_string()),
-        ("User-Agent".to_string(), "Kinode-App".to_string()),
-    ]));
-
-    println!("Headers prepared");
+    let url = Url::parse(&raw_url)?;
+    println!("Raw URL parsed successfully: {}", raw_url);
 
     let response = http::send_request_await_response(
         http::Method::GET,
         url,
-        headers,
-        30, // timeout in seconds
+        Some(std::collections::HashMap::from([
+            ("Accept".to_string(), "application/vnd.github.v3.raw".to_string()),
+        ])),
+        30,   // timeout in seconds
         Vec::new(), // empty body for GET request
     )?;
 
@@ -147,4 +152,12 @@ fn fetch_github_content(url: &str) -> Result<String> {
     println!("Content fetched and parsed successfully, length: {} characters", content.len());
 
     Ok(content)
+}
+
+pub fn test_rag_functionality(state: &mut State) -> anyhow::Result<String> {
+    let test_prompt = "How do I use the Telegram interface in Kinode?".to_string();
+    let test_rag_type = RAGType::Naive;
+
+    println!("Testing RAG functionality");
+    generate_rag_response(state, test_prompt, test_rag_type)
 }

@@ -54,6 +54,16 @@ fn init(our: Address) {
 
     let mut state = State::fetch().unwrap_or_default();
 
+    match test_rag_functionality(&mut state) {
+        Ok(result) => {
+            println!("RAG functionality test passed");
+            println!("Test result: {}", result);
+        },
+        Err(e) => {
+            println!("RAG functionality test failed: {:?}", e);
+        }
+    }
+
     loop {
         match handle_message(&our, &mut state) {
             Ok(()) => {}

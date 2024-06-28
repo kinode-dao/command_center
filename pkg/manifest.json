@@ -118,7 +118,8 @@
         "request_capabilities": [
             "main:command_center:appattacc.os",
             "vfs:distro:sys",
-            "openai:command_center:appattacc.os"
+            "openai:command_center:appattacc.os", 
+            "http_client:distro:sys"
         ],
         "grant_capabilities": [
             "main:command_center:appattacc.os"
