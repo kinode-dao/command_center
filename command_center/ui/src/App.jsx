@@ -4,17 +4,23 @@ import './App.css'
 
 import FlexSearch from "../node_modules/flexsearch/dist/flexsearch.bundle.module.min.js";
 
+window.handleLinkClick = (id) => {
+  console.log("clicked");
+  console.log(id);
+}
+
+
 function App() {
   const [activeTab, setActiveTab] = useState('Config');
   const [notesResult, setNotesResult] = useState(''); 
+  const [notes, setNotes] = useState({}); // Add this line
+  const [notesIndex, setNotesIndex] = useState(null); // Add this line
 
   const options = {
     charset: "latin:extra",
     preset: 'match',
     tokenize: 'strict',
   }
-  const notes_index = new FlexSearch.Index(options);
-  let notes = {};
 
   const fetchNotes = async () => {
     setNotesResult('Fetching notes and preparing index...');
@@ -26,10 +32,18 @@ function App() {
         }
       });
       const fetchedNotes = await response.json();
+      console.log(fetchedNotes);
       setNotes(fetchedNotes);
   
-      console.log("creating index");
       const newIndex = new FlexSearch.Index(options);
+      for (let key in fetchedNotes) {
+        newIndex.add(key, fetchedNotes[key]);
+      }
+      setNotesIndex(newIndex);
+
+
+      console.log("creating index");
+      console.log(newIndex);
       for (let key in fetchedNotes) {
         try {
           newIndex.add(key, fetchedNotes[key]);
@@ -53,10 +67,10 @@ function App() {
   }
 
   const searchNotes = () => {
-    console.log(notes_index);
+    console.log(notesIndex);
     const searchQuery = document.getElementById('notesSearch').value || null;
     console.log(searchQuery);
-    const ids = notes_index.search(searchQuery, 15);
+    const ids = notesIndex.search(searchQuery, 15);
     console.log(ids);
     const notes_result = Object.fromEntries(
       Object.entries(notes).filter(([key, value]) => ids.includes(key))
@@ -72,11 +86,20 @@ function App() {
         </ul>`
   }
   
-  const handleLinkClick = (id) => {
-    console.log("clicked");
-    console.log(id);
-  }
   
+  const openTab = (evt, tabName) => {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+  }
   
   
   function createNotePage(key, note) {
@@ -151,8 +174,8 @@ function App() {
       // Update the active tab state
       setActiveTab(tabName);
       
-      // Call the openTab function
-      window.openTab(event, tabName);
+      // // Call the openTab function
+      openTab(event, tabName);
     };
 
     // Add click event listeners to all tab buttons
@@ -326,6 +349,8 @@ function renderNotePage(hashChangeEvent) {
 
 }
 
+
+
 export async function fetchStatus() {
   const response = await fetch('/main:command_center:appattacc.os/status', {
     method: 'POST',
@@ -374,24 +399,10 @@ export function initializeTooltips() {
   });
 }
 
-export function openTab(evt, tabName) {
-  var i, tabcontent, tablinks;
-  tabcontent = document.getElementsByClassName("tabcontent");
-  for (i = 0; i < tabcontent.length; i++) {
-    tabcontent[i].style.display = "none";
-  }
-  tablinks = document.getElementsByClassName("tablinks");
-  for (i = 0; i < tablinks.length; i++) {
-    tablinks[i].className = tablinks[i].className.replace(" active", "");
-  }
-  document.getElementById(tabName).style.display = "block";
-  evt.currentTarget.className += " active";
-}
-
 export function webSocket() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const ws = new WebSocket(`${protocol}//${window.location.host}/tg:command_center:appattacc.os/`);
-  
+  const host = window.location.port === '5173' ? 'localhost:8080' : window.location.host;
+  const ws = new WebSocket(`${protocol}//${host}/tg:command_center:appattacc.os/`);
   ws.onopen = function (event) {
     console.log('Connection opened on ' + window.location.host + ':', event);
   };
