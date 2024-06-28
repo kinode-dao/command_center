@@ -16,6 +16,8 @@ use vectorbase::*;
 mod rag;
 use rag::*;
 
+mod prompts;
+
 wit_bindgen::generate!({
     path: "target/wit",
     world: "process-v0",
