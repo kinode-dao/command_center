@@ -23,19 +23,15 @@ wit_bindgen::generate!({
 fn handle_message(
     our: &Address,
 ) -> anyhow::Result<()> {
-    println!("chatbot: handle message");
     let message = await_message()?;
     if message.source().node != our.node {
         println!("chatbot: message from wrong node");
         return Ok(());
     }
-    println!("chatbot: message from {:?}", message.source());
-    println!("chatbot: {:#?}", message);
     handle_telegram_message(&message)
 }
 
 pub fn handle_telegram_message(message: &Message) -> anyhow::Result<()> {
-    println!("chatbot: handle telegram message");
     let Some(msg) = get_last_tg_msg(&message) else {
         return Ok(());
     };
@@ -44,7 +40,6 @@ pub fn handle_telegram_message(message: &Message) -> anyhow::Result<()> {
     if let Some(voice) = msg.voice.clone() {
         let audio = get_file(&voice.file_id)?;
         text += &get_text(audio)?;
-        println!("chatbot: text: {}", &text);
     }
     let answer = get_groq_answer(&text)?;
     let _message = send_bot_message(&answer, id);
@@ -77,7 +72,6 @@ fn _get_claude_answer(text: &str) -> anyhow::Result<String> {
 
 
 fn send_bot_message(text: &str, id: i64) -> anyhow::Result<TgMessage> {
-    println!("chatbot: send bot message: {}", text);
     let params = SendMessageParams::builder()
         .chat_id(ChatId::Integer(id)) 
         .text(text)
@@ -94,7 +88,6 @@ fn send_bot_message(text: &str, id: i64) -> anyhow::Result<TgMessage> {
 }
 
 fn get_groq_answer(text: &str) -> anyhow::Result<String> {
-    println!("chatbot: get groq answer");
     let request = ChatRequestBuilder::default()
         .model("llama3-8b-8192".to_string())
         .messages(vec![MessageBuilder::default()
@@ -110,12 +103,10 @@ fn get_groq_answer(text: &str) -> anyhow::Result<String> {
         println!("chatbot: failed to parse LLM response");
         return Err(anyhow::anyhow!("Failed to parse LLM response"));
     };
-    println!("{:?}", chat.choices[0].message.content.clone());
     Ok(chat.choices[0].message.content.clone())
 }
 
 fn get_text(audio: Vec<u8>) -> anyhow::Result<String> {
-    println!("chatbot: get text");
     let stt_request = serde_json::to_vec(&STTRequest::OpenaiTranscribe(audio))?;
     let response = Request::to(STT_ADDRESS)
         .body(stt_request)
@@ -128,22 +119,18 @@ fn get_text(audio: Vec<u8>) -> anyhow::Result<String> {
 }
 
 fn get_file(file_id: &str) -> anyhow::Result<Vec<u8>> {
-    println!("chatbot: get file");
     let get_file_params = GetFileParams::builder().file_id(file_id).build();
     let tg_request = serde_json::to_vec(&TgRequest::GetFile(get_file_params))?;
     let _ = Request::to(TG_ADDRESS)
         .body(tg_request)
         .send_and_await_response(10)??; 
     if let Some(blob) = get_blob() {
-        println!("chatbot: got file successfully");
         return Ok(blob.bytes);
     }
-    println!("chatbot: failed to get file");
     Err(anyhow::anyhow!("Failed to get file"))
 }
 
 fn get_last_tg_msg(message: &Message) -> Option<TgMessage> {
-    println!("chatbot: get last tg msg");
     let Ok(TgResponse::Update(tg_update)) = serde_json::from_slice(message.body()) else {
         println!("chatbot: failed to parse tg update from json");
         return None;
@@ -156,12 +143,10 @@ fn get_last_tg_msg(message: &Message) -> Option<TgMessage> {
             return None;
         }
     };
-    println!("{:?}", &msg);
     Some(msg.clone())
 }
 
 pub fn subscribe() -> anyhow::Result<()> {
-    println!("chatbot: subscribing to telegram");
     let subscribe_request = serde_json::to_vec(&TgRequest::Subscribe)?;
     let result = Request::to(TG_ADDRESS)
         .body(subscribe_request)
@@ -170,7 +155,6 @@ pub fn subscribe() -> anyhow::Result<()> {
         println!("chatbot: failed to parse subscription response");
         return Err(anyhow::anyhow!("Failed to parse subscription response"));
     };
-    println!("chatbot: subscribed to telegram");
     Ok(())
 }
 

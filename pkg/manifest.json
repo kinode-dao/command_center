@@ -111,8 +111,8 @@
         "public": true
     },
     {
-        "process_name": "vectorbase",
-        "process_wasm_path": "/vectorbase.wasm",
+        "process_name": "vectorbase_demo",
+        "process_wasm_path": "/vectorbase_demo.wasm",
         "on_exit": "Restart",
         "request_networking": true,
         "request_capabilities": [

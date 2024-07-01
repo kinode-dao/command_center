@@ -1,4 +1,4 @@
-use kinode_process_lib::{await_message, call_init, println, Address, Message};
+use kinode_process_lib::{await_message, call_init, println, Address, Message, Response};
 use llm_interface::openai::{
     EmbeddingRequest, LLMRequest as OpenAIRequest, LLMResponse as OpenAIResponse,
 };
@@ -36,14 +36,18 @@ fn handle_message(our: &Address, state: &mut State) -> anyhow::Result<()> {
 fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()> {
     match serde_json::from_slice::<Req>(body)? {
         Req::VectorbaseRequest(request) => handle_vectorbase_request(&mut state.vectorbase_state, request),
-        Req::RAGRequest(request) => handle_rag_request(&mut state.rag_state, request),
+        Req::RAGRequest(request) => {
+            let rag_response = handle_rag_request(&mut state.rag_state, request)?;
+            let _ = Response::new()
+                .body(serde_json::to_vec(&rag_response)?)
+                .send();
+            Ok(())
+        }
     }
 }
 
 call_init!(init);
 fn init(our: Address) {
-    println!("Begin: {:?}", our.process.process_name);
-
     let mut state = State::fetch().unwrap_or_default();
     rag::init(&mut state.rag_state).unwrap();
 

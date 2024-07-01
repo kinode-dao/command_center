@@ -1,5 +1,5 @@
 use anyhow::Result;
-use kinode_process_lib::{http, println, Request, Response};
+use kinode_process_lib::{http, println, Request};
 use llm_interface::openai::{
     ClaudeChatRequestBuilder, LLMRequest, LLMResponse, MessageBuilder,
 };
@@ -12,7 +12,7 @@ use crate::prompts::rag_instruction;
 pub mod structs;
 use structs::State;
 
-pub const DEBUG: bool = false;
+pub const DEBUG: bool = true;
 
 pub fn init(state: &mut State) -> anyhow::Result<()> {
     state.base_context = fetch_github_content(
@@ -40,14 +40,15 @@ fn debug_test(state: &mut State) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn handle_rag_request(state: &mut State, request: RAGRequest) -> anyhow::Result<()> {
+pub fn handle_rag_request(state: &mut State, request: RAGRequest) -> anyhow::Result<RAGResponse> {
     match request {
         RAGRequest::RAG { prompt, rag_type } => {
-            if let Err(e) = generate_rag_response(state, prompt, rag_type) {
-                println!("Error generating RAG response: {:?}", e);
-                return Err(e);
-            } else {
-                Ok(())
+            match generate_rag_response(state, prompt, rag_type) {
+                Ok(response) => Ok(response),
+                Err(e) => {
+                    println!("Error generating RAG response: {:?}", e);
+                    Err(e.into())
+                }
             }
         } // Add other RAG request types as needed
     }
@@ -57,7 +58,7 @@ pub fn generate_rag_response(
     state: &mut State,
     prompt: String,
     rag_type: RAGType,
-) -> Result<String> {
+) -> Result<RAGResponse> {
     match rag_type {
         RAGType::Naive => {}
         RAGType::Vector => return Err(anyhow::anyhow!("Vector RAG type is not yet implemented")),
@@ -69,17 +70,15 @@ pub fn generate_rag_response(
     let link_content = parse_and_fetch_content(&links)?;
 
     let combined_content = if DEBUG {
+        println!("DEBUG: We're in debug mode, not printing everything.");
+        println!("DEBUG: state.base_context would be {} lines long.", state.base_context.lines().count());
         format!("DEBUG_BASE_CONTEXT\n\n{}", link_content)
     } else {
         format!("{}\n\n{}", state.base_context, link_content)
     };
     let rag_response = RAGResponse::RAG(combined_content.clone());
 
-    let _ = Response::new()
-        .body(serde_json::to_vec(&rag_response)?)
-        .send();
-
-    Ok(combined_content)
+    Ok(rag_response)
 }
 
 fn call_claude(prompt: String) -> Result<String> {
@@ -158,8 +157,11 @@ pub fn fetch_github_content(url: &str) -> Result<String> {
 }
 
 pub fn test_rag_functionality(state: &mut State) -> anyhow::Result<String> {
-    let test_prompt = "How do I use the Telegram interface in Kinode?".to_string();
+    let test_prompt = "How do I send an LLM message to claude via telegram?".to_string();
     let test_rag_type = RAGType::Naive;
 
-    generate_rag_response(state, test_prompt, test_rag_type)
+    match generate_rag_response(state, test_prompt, test_rag_type)? {
+        RAGResponse::RAG(response) => Ok(response),
+        RAGResponse::Error(error) => Ok(format!("Error: {}", error)),
+    }
 }

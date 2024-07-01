@@ -147,8 +147,6 @@ fn populate_tweets(our: &Address, state: &mut Option<State>, bytes: &[u8]) -> an
 
 call_init!(init);
 fn init(our: Address) {
-    println!("Begin: {:?}", our.process.process_name);
-
     if let Err(e) = http::serve_index_html(&our, "ui", false, true, vec!["/", "/populate"]) {
         panic!("Error binding https paths: {:?}", e);
     }
