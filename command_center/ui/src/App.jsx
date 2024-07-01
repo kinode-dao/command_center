@@ -17,7 +17,7 @@ function App() {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupContent, setPopupContent] = useState('');
   const [messages, setMessages] = useState([]);
-
+  const [treeData, setTreeData] = useState([]);
 
   const options = {
     charset: "latin:extra",
@@ -35,112 +35,62 @@ function App() {
   const lastBackupSize = "1gb";
   const notesBackupProvider = 'sour-cabbage.os';
 
-  function createMockArboristData() {
-    return [
-      {
-        id: "root",
-        name: "Root",
-        children: [
-          {
-            id: "documents",
-            name: "Documents",
-            children: [
-              {
-                id: "work",
-                name: "Work",
-                children: [
-                  {
-                    id: "project-a",
-                    name: "Project A",
-                    children: [
-                      { id: "proposal.docx", name: "proposal.docx" },
-                      { id: "budget.xlsx", name: "budget.xlsx" }
-                    ]
-                  },
-                  {
-                    id: "project-b",
-                    name: "Project B",
-                    children: [
-                      { id: "requirements.txt", name: "requirements.txt" },
-                      { id: "timeline.pdf", name: "timeline.pdf" }
-                    ]
-                  }
-                ]
-              },
-              {
-                id: "personal",
-                name: "Personal",
-                children: [
-                  {
-                    id: "recipes",
-                    name: "Recipes",
-                    children: [
-                      { id: "pasta.md", name: "pasta.md" },
-                      { id: "smoothie.md", name: "smoothie.md" }
-                    ]
-                  },
-                  {
-                    id: "travel",
-                    name: "Travel",
-                    children: [
-                      { id: "packing-list.txt", name: "packing-list.txt" },
-                      { id: "itinerary.pdf", name: "itinerary.pdf" }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            id: "pictures",
-            name: "Pictures",
-            children: [
-              {
-                id: "vacation-2023",
-                name: "Vacation 2023",
-                children: [
-                  { id: "beach.jpg", name: "beach.jpg" },
-                  { id: "mountains.jpg", name: "mountains.jpg" }
-                ]
-              },
-              {
-                id: "family",
-                name: "Family",
-                children: [
-                  { id: "birthday.png", name: "birthday.png" },
-                  { id: "graduation.jpg", name: "graduation.jpg" }
-                ]
-              }
-            ]
-          },
-          {
-            id: "music",
-            name: "Music",
-            children: [
-              {
-                id: "rock",
-                name: "Rock",
-                children: [
-                  { id: "classic_rock_playlist.m3u", name: "classic_rock_playlist.m3u" }
-                ]
-              },
-              {
-                id: "jazz",
-                name: "Jazz",
-                children: [
-                  { id: "smooth_jazz_collection.m3u", name: "smooth_jazz_collection.m3u" }
-                ]
-              }
-            ]
-          },
-          { id: "notes.txt", name: "notes.txt" },
-          { id: "todo.md", name: "todo.md" }
-        ]
-      }
-    ];
-  }
-  const [treeData, setTreeData] = useState(createMockArboristData());
+  const paths = [
+    'Documents/Work/Project A/proposal.docx',
+    'Documents/Work/Project A/budget.xlsx',
+    'Documents/Work/Project B/requirements.txt',
+    'Documents/Work/Project B/timeline.pdf',
+    'Documents/Personal/Recipes/pasta.md',
+    'Documents/Personal/Recipes/smoothie.md',
+    'Documents/Personal/Travel/packing-list.txt',
+    'Documents/Personal/Travel/itinerary.pdf',
+    'Pictures/Vacation 2023/beach.jpg',
+    'Pictures/Vacation 2023/mountains.jpg',
+    'Pictures/Family/birthday.png',
+    'Pictures/Family/graduation.jpg',
+    'Music/Rock/classic_rock_playlist.m3u',
+    'Music/Jazz/smooth_jazz_collection.m3u',
+    'notes.txt',
+    'todo.md'
+  ];
+const paths2 = [
+  'command_center:appattacc.os/files/Obsidian Vault/Google Keep/2023-05-03T00_21_53.290+02_00.md',
+  'command_center:appattacc.os/files/Obsidian Vault/Google Keep/2022-05-14T14_03_15.845+02_00.md',
+  'command_center:appattacc.os/files/Obsidian Vault/Google Keep/2022-04-28T22_58_58.690+02_00.md',
+  'command_center:appattacc.os/files/Obsidian Vault/Google Keep/2022-03-29T18_45_17.453+02_00.md',
+  'command_center:appattacc.os/files/Obsidian Vault/Google Keep/2022-04-28T22_48_42.836+02_00.md',
+  'command_center:appattacc.os/files/Obsidian Vault/Google Keep/2023-06-26T09_40_58.799+02_00.md',
+  'command_center:appattacc.os/files/Obsidian Vault/Google Keep/U potrazi za iskupljenjem.md',
+  'command_center:appattacc.os/files/Obsidian Vault/abominacija od sina.md',
+  'command_center:appattacc.os/files/Obsidian Vault/ljubav.md',
+  'command_center:appattacc.os/files/Obsidian Vault/sql code.md',
+  'command_center:appattacc.os/files/Obsidian Vault/5meo dmt.md'
+]
+// console.log(notesKeys.slice(0,2));
+// console.log(paths2.slice(0,2));
+useEffect (() => {
+    console.log("init");
+    const notesKeys = Object.keys(notes);
+    console.log(notes);
+    const newTreeData = pathsToTree(notesKeys);
+    console.log(newTreeData)
+    setTreeData(newTreeData);
+  }, [notes]);
+    // console.log("1");
+  // const neww = pathsToTree(notesKeys.slice(0,2));
+  // const newTreeData = neww;
+  // console.log(newTreeData);
+  // console.log("2");
+  // console.log(newTreeData2);
+
+  // useEffect(() => {
+  //   setTreeData(newTreeData);
+  //   console.log("notes changed")
+  // }, [notes]);
+
   
+
+
   useEffect(() => {
     webSocket();
     initializeTooltips();
@@ -325,9 +275,6 @@ function App() {
     });
   }, [activeTab]);
 
-  useEffect(() => {
-    
-  }, [notes]);
   
   return (
 <>
@@ -494,10 +441,9 @@ function App() {
           rowHeight={36}
           overscanCount={1}
         >
-
-    {TreeNode}
-  </Tree>
-</div>
+          {TreeNode}
+        </Tree>
+      </div>
 
       
     </div>
@@ -629,3 +575,42 @@ export async function submitKey() {
       document.getElementById('result').textContent = 'Failed to submit key.';
   }
 }
+
+function pathsToTree(paths) {
+  const root = { name: 'root', children: {} };
+
+  paths.forEach(path => {
+    const parts = path.split('/');
+    let currentNode = root;
+
+    parts.forEach((part, index) => {
+      if (!currentNode.children[part]) {
+        currentNode.children[part] = { name: part, children: {} };
+      }
+      currentNode = currentNode.children[part];
+
+      // If it's the last part, mark it as a file
+      if (index === parts.length - 1) {
+        currentNode.isFile = true;
+      }
+    });
+  });
+
+  // Helper function to convert the tree to Arborist format
+  function convertToArboristFormat(node, id = 'root') {
+    const children = Object.entries(node.children).map(([key, value]) => 
+      convertToArboristFormat(value, `${id}/${key}`)
+    );
+
+    return {
+      id,
+      name: node.name,
+      isLeaf: node.isFile,
+      children: children.length > 0 ? children : undefined
+    };
+  }
+
+  return [convertToArboristFormat(root)];
+}
+
+// Example usage:
