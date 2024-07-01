@@ -12,10 +12,12 @@
     "build:copy": "npm run build && npm run copy"
   },
   "dependencies": {
+    "@uiw/react-md-editor": "^4.0.4",
     "flexsearch": "^0.7.43",
     "react": "^18.3.1",
     "react-arborist": "^3.4.0",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.24.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

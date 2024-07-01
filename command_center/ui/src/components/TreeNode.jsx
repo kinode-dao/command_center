@@ -1,10 +1,12 @@
 function TreeNode({ node, style, dragHandle }) {
+
     const handleClick = () => {
       if (!node.isLeaf) {
         node.toggle();
       } else {
         console.log('Clicked file:', node.data.name);
-        // Handle file click (e.g., open file content)
+        const url = `/main:command_center:appattacc.os/#/file/${encodeURIComponent(node.data.id)}`;
+        window.open(url, '_blank');  
       }
     };
 
