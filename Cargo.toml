@@ -4,7 +4,7 @@ members = [
     "command_center",
     "ai_chatbot_demo",
     "storage", 
-    "vectorbase"
+    "vectorbase_demo"
 ]
 
 [profile.release]
