@@ -5,8 +5,8 @@ function TreeNode({ node, style, dragHandle }) {
         node.toggle();
       } else {
         console.log('Clicked file:', node.data.name);
-        const url = `/main:command_center:appattacc.os/#/file/${encodeURIComponent(node.data.id)}`;
-        window.open(url, '_blank');  
+        const path = `/file/${encodeURIComponent(node.data.id)}`;
+        window.location.hash = path;
       }
     };
 

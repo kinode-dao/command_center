@@ -1,29 +1,18 @@
 import { useParams } from 'react-router-dom';
 import MDEditor from '@uiw/react-md-editor';
 import { useState, useEffect } from 'react';
+import '../App.css';
 
-function FileView() {
-  const { filePath } = useParams();
+function FileView(note) {
   const [content, setContent] = useState('');
-
-  useEffect(() => {
-    // Fetch file content based on filePath
-    // This is a placeholder, replace with actual API call
-    const fetchContent = async () => {
-      // const response = await fetch(`/api/file/${filePath}`);
-      // const data = await response.text();
-      // setContent(data);
-      setContent('# Placeholder content\n\nReplace this with actual file content.');
-    };
-    fetchContent();
-  }, [filePath]);
-
   return (
-    <div>
-      <h2>Viewing file: {filePath}</h2>
+<div className="h-screen w-screen overflow-hidden flex flex-col">
+      <h2 className="p-4 flex-shrink-0">Viewing file</h2>
       <MDEditor
-        value={content}
+        value={note.note}
         onChange={setContent}
+        className="flex-grow"
+        preview="edit"
       />
     </div>
   );

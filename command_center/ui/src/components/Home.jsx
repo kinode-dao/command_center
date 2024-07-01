@@ -3,12 +3,12 @@ import Popup from './Popup'
 import TreeNode from './TreeNode'
 import { Tree } from 'react-arborist';
 import FlexSearch from "../../node_modules/flexsearch/dist/flexsearch.bundle.module.min.js";
+import '../App.css';
 
 
-function Home() {
+function Home({ notes, setNotes }) {
     const [activeTab, setActiveTab] = useState('Notes');
     const [notesResult, setNotesResult] = useState(''); 
-    const [notes, setNotes] = useState({}); // Add this line
     const [notesIndex, setNotesIndex] = useState(null); // Add this line
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [popupContent, setPopupContent] = useState('');
@@ -33,6 +33,8 @@ function Home() {
   
   useEffect (() => {
       console.log("init");
+      console.log("Notes updated in App:", notes);
+
       const notesKeys = Object.keys(notes);
       const newTreeData = pathsToTree(notesKeys);
       setTreeData(newTreeData);
@@ -148,7 +150,7 @@ function Home() {
       document.getElementById('notesResult').innerHTML =
       `<ul>
       ${Object.keys(notes_result).map((key) => {
-          return `<nav><a id="${key}" href="#" onClick="window.open('/main:command_center:appattacc.os/#/file/${encodeURIComponent(key)}', '_blank'); return false;">${key}</a></nav>`
+          return `<nav><a id="${key}" href="#" onClick="window.location.hash = '/file/${encodeURIComponent(key)}'; return false;">${key}</a></nav>`
         }).join('')}
           </ul>`
     }

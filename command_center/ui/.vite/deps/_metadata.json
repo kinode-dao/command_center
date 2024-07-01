@@ -1,0 +1,49 @@
+{
+  "hash": "44056f19",
+  "configHash": "802fcd95",
+  "lockfileHash": "23fb795d",
+  "browserHash": "db673846",
+  "optimized": {
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "87304987",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "6531dd33",
+      "needsInterop": true
+    },
+    "react-router-dom": {
+      "src": "../../node_modules/react-router-dom/dist/index.js",
+      "file": "react-router-dom.js",
+      "fileHash": "ac9f6819",
+      "needsInterop": false
+    },
+    "@uiw/react-md-editor": {
+      "src": "../../node_modules/@uiw/react-md-editor/esm/index.js",
+      "file": "@uiw_react-md-editor.js",
+      "fileHash": "753a0a26",
+      "needsInterop": false
+    },
+    "react-arborist": {
+      "src": "../../node_modules/react-arborist/dist/module/index.js",
+      "file": "react-arborist.js",
+      "fileHash": "f0234ccf",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-L2Q2RVSC": {
+      "file": "chunk-L2Q2RVSC.js"
+    },
+    "chunk-BON3UWJ6": {
+      "file": "chunk-BON3UWJ6.js"
+    },
+    "chunk-DDNM7ENY": {
+      "file": "chunk-DDNM7ENY.js"
+    }
+  }
+}

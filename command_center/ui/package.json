@@ -9,7 +9,8 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "copy": "mkdir -p ../pkg/ui && rm -rf ../pkg/ui/* && cp -r dist/* ../pkg/ui/",
-    "build:copy": "npm run build && npm run copy"
+    "build:copy": "npm run build && npm run copy",
+    "uncss": "uncss --config uncss.config.js"
   },
   "dependencies": {
     "@uiw/react-md-editor": "^4.0.4",
@@ -27,6 +28,8 @@
     "eslint-plugin-react": "^7.34.2",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.7",
+    "purgecss": "^6.0.0",
+    "uncss": "^0.17.3",
     "vite": "^5.3.1"
   }
 }
