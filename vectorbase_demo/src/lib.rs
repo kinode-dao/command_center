@@ -1,14 +1,10 @@
-use kinode_process_lib::{await_message, call_init, println, Address, Message, Request, Response};
+use kinode_process_lib::{await_message, call_init, println, Address, Message};
 use llm_interface::openai::{
     EmbeddingRequest, LLMRequest as OpenAIRequest, LLMResponse as OpenAIResponse,
 };
-use vectorbase_interface::rag::{Request as RAGRequest, Response as RAGResponse};
-use vectorbase_interface::vectorbase::{
-    Request as VectorbaseRequest, Response as VectorbaseResponse,
-};
 
 mod structs;
-use structs::State;
+use structs::{State, Req};
 
 mod vectorbase;
 use vectorbase::*;
@@ -16,7 +12,6 @@ use vectorbase::*;
 mod rag;
 use rag::*;
 
-pub const DEBUG: bool = false;
 
 wit_bindgen::generate!({
     path: "target/wit",
@@ -39,13 +34,10 @@ fn handle_message(our: &Address, state: &mut State) -> anyhow::Result<()> {
 }
 
 fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()> {
-    if let Ok(request) = serde_json::from_slice::<VectorbaseRequest>(body) {
-        return handle_vectorbase_request(&mut state.vectorbase_state, request);
+    match serde_json::from_slice::<Req>(body)? {
+        Req::VectorbaseRequest(request) => handle_vectorbase_request(&mut state.vectorbase_state, request),
+        Req::RAGRequest(request) => handle_rag_request(&mut state.rag_state, request),
     }
-    if let Ok(request) = serde_json::from_slice::<RAGRequest>(body) {
-        return handle_rag_request(&mut state.rag_state, request);
-    }
-    Err(anyhow::anyhow!("Unknown request type"))
 }
 
 call_init!(init);
@@ -53,19 +45,7 @@ fn init(our: Address) {
     println!("Begin: {:?}", our.process.process_name);
 
     let mut state = State::fetch().unwrap_or_default();
-
-    // TODO: Zena: Entrypoint: Check those weird debugs, clean them up
-    if DEBUG {
-        match test_rag_functionality(&mut state.rag_state) {
-            Ok(result) => {
-                println!("RAG functionality test passed");
-                println!("Test result: {}", result);
-            }
-            Err(e) => {
-                println!("RAG functionality test failed: {:?}", e);
-            }
-        }
-    }
+    rag::init(&mut state.rag_state).unwrap();
 
     loop {
         match handle_message(&our, &mut state) {

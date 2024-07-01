@@ -1,17 +1,44 @@
 use anyhow::Result;
 use kinode_process_lib::{http, println, Request, Response};
 use llm_interface::openai::{
-    ClaudeChatRequest, ClaudeChatRequestBuilder, LLMRequest, LLMResponse, Message, MessageBuilder,
+    ClaudeChatRequestBuilder, LLMRequest, LLMResponse, MessageBuilder,
 };
-use std::collections::HashMap;
 use url::Url;
 use vectorbase_interface::rag::{RAGType, Request as RAGRequest, Response as RAGResponse};
 
 pub mod prompts;
-use crate::prompts::{rag_instruction, INTERFACE_CONTEXT};
+use crate::prompts::rag_instruction;
 
 pub mod structs;
 use structs::State;
+
+pub const DEBUG: bool = false;
+
+pub fn init(state: &mut State) -> anyhow::Result<()> {
+    state.base_context = fetch_github_content(
+        "https://github.com/kinode-dao/kinocontext/blob/main/combined_output.txt",
+    )?;
+    state.index_context =
+        fetch_github_content("https://github.com/kinode-dao/kinocontext/blob/main/link_index.txt")?;
+    let _ = debug_test(state);
+    state.save();
+    Ok(())
+}
+
+fn debug_test(state: &mut State) -> anyhow::Result<()> {
+    if DEBUG {
+        match test_rag_functionality(state) {
+            Ok(result) => {
+                println!("RAG functionality test passed");
+                println!("Test result: {}", result);
+            }
+            Err(e) => {
+                println!("RAG functionality test failed: {:?}", e);
+            }
+        }
+    }
+    Ok(())
+}
 
 pub fn handle_rag_request(state: &mut State, request: RAGRequest) -> anyhow::Result<()> {
     match request {
@@ -34,22 +61,23 @@ pub fn generate_rag_response(
     match rag_type {
         RAGType::Naive => {}
         RAGType::Vector => return Err(anyhow::anyhow!("Vector RAG type is not yet implemented")),
-        _ => return Err(anyhow::anyhow!("Unsupported RAG type")),
     }
 
-    let modified_prompt = rag_instruction(&prompt);
+    let modified_prompt = rag_instruction(&prompt, &state.index_context);
+    let links = call_claude(modified_prompt)?;
 
-    let content = call_claude(modified_prompt)?;
-    let combined_content = parse_and_fetch_content(&content)?;
+    let link_content = parse_and_fetch_content(&links)?;
 
+    let combined_content = if DEBUG {
+        format!("DEBUG_BASE_CONTEXT\n\n{}", link_content)
+    } else {
+        format!("{}\n\n{}", state.base_context, link_content)
+    };
     let rag_response = RAGResponse::RAG(combined_content.clone());
-    println!("RAG response created");
 
-    let response = Response::new()
+    let _ = Response::new()
         .body(serde_json::to_vec(&rag_response)?)
         .send();
-
-    println!("RAG response sent");
 
     Ok(combined_content)
 }

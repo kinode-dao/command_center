@@ -1,4 +1,4 @@
-use kinode_process_lib::{await_message, call_init, println, Address, Message, Request, Response};
+use kinode_process_lib::{Request, Response};
 use std::collections::HashMap;
 use vectorbase_interface::vectorbase::{
     Request as VectorbaseRequest, Response as VectorbaseResponse,

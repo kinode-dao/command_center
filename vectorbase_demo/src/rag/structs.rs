@@ -8,7 +8,7 @@ pub struct State {
 }
 
 impl State {
-    pub fn fetch() -> Option<State> {
+    pub fn _fetch() -> Option<State> {
         if let Some(state_bytes) = get_state() {
             bincode::deserialize(&state_bytes).ok()
         } else {
