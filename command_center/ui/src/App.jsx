@@ -68,14 +68,16 @@ const paths2 = [
 ]
 // console.log(notesKeys.slice(0,2));
 // console.log(paths2.slice(0,2));
+// let newTreeData = pathsToTree(paths2);
 useEffect (() => {
     console.log("init");
     const notesKeys = Object.keys(notes);
-    console.log(notes);
+    console.log(notesKeys);
     const newTreeData = pathsToTree(notesKeys);
     console.log(newTreeData)
     setTreeData(newTreeData);
   }, [notes]);
+
     // console.log("1");
   // const neww = pathsToTree(notesKeys.slice(0,2));
   // const newTreeData = neww;
@@ -433,6 +435,7 @@ useEffect (() => {
 
       <div className="notes-tree" style={{ height: "400px", width: "300px" }}>
         <Tree
+          key={JSON.stringify(treeData)}
           initialData={treeData}
           openByDefault={true}
           width={300}
