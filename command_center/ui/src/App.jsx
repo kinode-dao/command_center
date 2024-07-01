@@ -1,4 +1,4 @@
-import './App.css'
+import './App.css';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import FileView from './components/FileView';
 import Home from './components/Home';

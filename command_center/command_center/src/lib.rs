@@ -183,6 +183,7 @@ fn handle_http_request(
     body: &[u8],
     pkgs: &HashMap<Pkg, Address>,
 ) -> anyhow::Result<()> {
+    println!("HTTP request");
     let http_request = http::HttpServerRequest::from_bytes(body)?
         .request()
         .ok_or_else(|| anyhow::anyhow!("Failed to parse http request"))?;
