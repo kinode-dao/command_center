@@ -10,6 +10,8 @@ use crate::LLM_ADDRESS;
 use crate::OpenAIRequest;
 use crate::EmbeddingRequest;
 
+pub mod structs;
+
 pub fn handle_vectorbase_request(
     state: &mut State,
     request: VectorbaseRequest,

@@ -7,16 +7,13 @@ use vectorbase_interface::vectorbase::{
     Request as VectorbaseRequest, Response as VectorbaseResponse,
 };
 
-mod structs;
-use structs::*;
 
 mod vectorbase;
 use vectorbase::*;
+use vectorbase::structs::*;
 
 mod rag;
 use rag::*;
-
-mod prompts;
 
 pub const DEBUG: bool = false;
 

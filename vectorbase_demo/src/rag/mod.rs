@@ -8,7 +8,9 @@ use std::collections::HashMap;
 use url::Url;
 use vectorbase_interface::rag::{RAGType, Request as RAGRequest, Response as RAGResponse};
 
+pub mod prompts;
 use crate::prompts::{rag_instruction, INTERFACE_CONTEXT};
+
 
 pub fn handle_rag_request(state: &mut State, request: RAGRequest) -> anyhow::Result<()> {
     match request {
