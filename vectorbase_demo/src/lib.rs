@@ -7,10 +7,11 @@ use vectorbase_interface::vectorbase::{
     Request as VectorbaseRequest, Response as VectorbaseResponse,
 };
 
+mod structs;
+use structs::State;
 
 mod vectorbase;
 use vectorbase::*;
-use vectorbase::structs::*;
 
 mod rag;
 use rag::*;
@@ -39,10 +40,10 @@ fn handle_message(our: &Address, state: &mut State) -> anyhow::Result<()> {
 
 fn handle_internal_request(state: &mut State, body: &[u8]) -> anyhow::Result<()> {
     if let Ok(request) = serde_json::from_slice::<VectorbaseRequest>(body) {
-        return handle_vectorbase_request(state, request);
+        return handle_vectorbase_request(&mut state.vectorbase_state, request);
     }
     if let Ok(request) = serde_json::from_slice::<RAGRequest>(body) {
-        return handle_rag_request(state, request);
+        return handle_rag_request(&mut state.rag_state, request);
     }
     Err(anyhow::anyhow!("Unknown request type"))
 }
@@ -55,7 +56,7 @@ fn init(our: Address) {
 
     // TODO: Zena: Entrypoint: Check those weird debugs, clean them up
     if DEBUG {
-        match test_rag_functionality(&mut state) {
+        match test_rag_functionality(&mut state.rag_state) {
             Ok(result) => {
                 println!("RAG functionality test passed");
                 println!("Test result: {}", result);
@@ -76,4 +77,3 @@ fn init(our: Address) {
     }
 }
 
-// TODO: Zena: Maybe we can add some kind of intermittent embedding population?

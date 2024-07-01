@@ -1,16 +1,21 @@
-use crate::structs::Element;
 use kinode_process_lib::{await_message, call_init, println, Address, Message, Request, Response};
 use std::collections::HashMap;
 use vectorbase_interface::vectorbase::{
     Request as VectorbaseRequest, Response as VectorbaseResponse,
 };
-use crate::State;
 use crate::OpenAIResponse;
 use crate::LLM_ADDRESS;
 use crate::OpenAIRequest;
 use crate::EmbeddingRequest;
 
 pub mod structs;
+use structs::{Element, State};
+
+/*
+TODO: Zena: Maybe we can add some kind of intermittent embedding population?
+This is because if we fill a ton of data and don't generate embeddings, semantic search will be slow.
+Something like a 10s loop that checks for unembedded elements.
+*/ 
 
 pub fn handle_vectorbase_request(
     state: &mut State,

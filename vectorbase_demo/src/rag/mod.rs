@@ -1,4 +1,3 @@
-use crate::structs::State;
 use anyhow::Result;
 use kinode_process_lib::{http, println, Request, Response};
 use llm_interface::openai::{
@@ -11,6 +10,8 @@ use vectorbase_interface::rag::{RAGType, Request as RAGRequest, Response as RAGR
 pub mod prompts;
 use crate::prompts::{rag_instruction, INTERFACE_CONTEXT};
 
+pub mod structs;
+use structs::State;
 
 pub fn handle_rag_request(state: &mut State, request: RAGRequest) -> anyhow::Result<()> {
     match request {
@@ -97,7 +98,7 @@ fn parse_and_fetch_content(content: &str) -> Result<String> {
     Ok(combined_content)
 }
 
-fn fetch_github_content(url: &str) -> Result<String> {
+pub fn fetch_github_content(url: &str) -> Result<String> {
     // Convert GitHub URL to raw content URL
     let raw_url = url
         .replace("github.com", "raw.githubusercontent.com")
