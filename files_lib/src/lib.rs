@@ -88,7 +88,7 @@ pub fn read_nested_dir_light(dir: DirEntry) -> anyhow::Result<HashMap<String, St
     //  dirs ->
     //    for each -> read nested dir -> accumulate map path contents
     for dir in directories {
-        output.extend(read_nested_dir(dir)?);
+        output.extend(read_nested_dir_light(dir)?);
     }
 
     Ok(output)
